@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>等身大ロボット脚コントローラ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      background: #111;
+      color: #eee;
+      font-family: system-ui, sans-serif;
+    }
+    #canvas {
+      touch-action: none;
+      background: #111;
+    }
+    #info {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 8px 12px;
+      background: rgba(0,0,0,0.5);
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <div id="info">
+    1本目：踵→膝の向き（sune） ／ 2本目：膝→腰の向き（Futomomo）<br>
+    表示角度：足の水平とすねの角度（足首）、すねと太ももの角度（膝）
+  </div>
+
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    // ------------------------
+    //  関節・セグメント
+    // ------------------------
+    let tsumasaki  = { x: 0, y: 0 };  // 足先
+    let kakato = { x: 0, y: 0 };  // 踵（固定）
+    let hiza  = { x: 0, y: 0 };  // 膝
+    let hip   = { x: 0, y: 0 };  // 腰
+
+    let L_sune = 120; // 膝〜踵
+    let L_Futomomo = 150; // 腰〜膝
+    let L_tsumasaki  = 40;  // 踵〜つま先
+
+    // 角度（Canvas座標系：x右+, y下+）
+    // kakatoAngle: 踵→膝 の絶対角度
+    // hizaAngle: 膝→腰 の絶対角度
+    let kakatoAngle = Math.PI * 0.3;
+    let hizaAngle = Math.PI * 1.0;
+
+    let myKakatoAngle = 90.0
+
+    // タッチ管理
+    let primaryId = null;   // 1本目 → sune
+    let secondaryId = null; // 2本目 → Futomomo
+
+    // 送信制御
+    let lastSend = 0;
+    const INTERVAL = 60; // ms
+
+    // ------------------------
+    //  初期レイアウト
+    // ------------------------
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      // 踵の位置：画面下寄り中央
+      kakato.x = canvas.width / 2;
+      kakato.y = canvas.height * 0.85;
+
+      // 足は「水平で画面左向き」になるように配置
+      tsumasaki.x = kakato.x - L_tsumasaki;   // 左方向へ
+      tsumasaki.y = kakato.y;            // 水平
+
+      calcJointPositions();
+      drawLeg();
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    // ------------------------
+    //  関節位置計算
+    // ------------------------
+    function calcJointPositions() {
+      // すね（踵→膝）
+      hiza.x = kakato.x - L_sune * Math.cos(kakatoAngle * Math.PI / 180)
+      hiza.y = kakato.y - L_sune * Math.sin(kakatoAngle * Math.PI / 180);
+
+      hizaAngle2 = hizaAngle - kakatoAngle
+
+      // 太もも（膝→腰）
+      hip.x = hiza.x + L_Futomomo * Math.cos(hizaAngle2 * Math.PI / 180);
+      hip.y = hiza.y - L_Futomomo * Math.sin(hizaAngle2 * Math.PI / 180);
+    }
+
+    function getMathPosX(kakatoX, screenPosX) {
+      mathPosX = screenPosX - kakatoX
+      return mathPosX
+    }
+    function getMathPosY(kakatoY, screenPosY) {
+      mathPosY = kakatoY - screenPosY
+      return mathPosY
+    }
+
+    // ------------------------
+    //  ユーティリティ
+    // ------------------------
+    function angleBetweenPoints(pCenter, p1, p2) {
+      // pCenterを頂点とする p1, p2 のなす角 [rad]
+      const v1x = p1.x - pCenter.x;
+      const v1y = p1.y - pCenter.y;
+      const v2x = p2.x - pCenter.x;
+      const v2y = p2.y - pCenter.y;
+
+      const dot = v1x * v2x + v1y * v2y;
+      const len1 = Math.hypot(v1x, v1y);
+      const len2 = Math.hypot(v2x, v2y);
+      if (len1 === 0 || len2 === 0) return 0;
+
+      let cosTheta = dot / (len1 * len2);
+      cosTheta = Math.max(-1, Math.min(1, cosTheta)); // 安全クランプ
+      return Math.acos(cosTheta); // 0〜π
+    }
+
+    function drawJoint(p, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawAngleLabel(p, text, offsetX, offsetY) {
+      const ox = offsetX ?? 10;
+      const oy = offsetY ?? -10;
+      ctx.fillStyle = "#fff";
+      ctx.font = "12px monospace";
+      ctx.fillText(text, p.x + ox, p.y + oy);
+    }
+
+    // ------------------------
+    //  描画
+    // ------------------------
+    function drawLeg() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 足（踵→つま先：水平・左向き）
+      ctx.strokeStyle = "#aaa";
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.moveTo(kakato.x, kakato.y);
+      ctx.lineTo(tsumasaki.x, tsumasaki.y);
+      ctx.stroke();
+
+      // すね（踵→膝）
+      ctx.strokeStyle = "#0f8";
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.moveTo(kakato.x, kakato.y);
+      ctx.lineTo(hiza.x, hiza.y);
+      ctx.stroke();
+
+      // 太もも（膝→腰）
+      ctx.strokeStyle = "#0af";
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.moveTo(hiza.x, hiza.y);
+      ctx.lineTo(hip.x, hip.y);
+      ctx.stroke();
+
+      // 関節
+      drawJoint(tsumasaki,  "#fff");
+      drawJoint(kakato, "#ff0");
+      drawJoint(hiza,  "#fff");
+      drawJoint(hip,   "#fff");
+
+      // --- 関節間の角度を計算して表示 ---
+
+      // 足首：足(tsumasaki) と すね(膝) の間の角度
+      // const kakatoRad = angleBetweenPoints(
+      //   kakato,
+      //   tsumasaki,  // 足方向ベクトル
+      //   hiza   // すね方向ベクトル
+      // );
+      // const kakatoDeg = (kakatoRad * 180 / Math.PI).toFixed(1);
+
+      // 膝：すね(踵) と 太もも(腰) の間の角度
+      // const hizaRad = angleBetweenPoints(
+      //   hiza,
+      //   kakato, // すね
+      //   hip    // 太もも
+      // );
+      // const hizaDeg = (hizaRad * 180 / Math.PI).toFixed(1);
+
+      // ラベル描画
+      // drawAngleLabel(kakato, `kakato: ${kakatoDeg}°`,  12, -12);
+      // drawAngleLabel(hiza,  `hiza:  ${hizaDeg}°`,  12, -12);
+      drawAngleLabel(kakato, `kakatoAngle: ${kakatoAngle}°`,  12, -12);
+      drawAngleLabel(hiza,  `hizaAngle:  ${hizaAngle}°`,  12, -12);
+    }
+
+    // ------------------------
+    //  サーボ角度送信（絶対角度のまま）
+    // ------------------------
+    function sendAngles() {
+      const now = Date.now();
+      if (now - lastSend < INTERVAL) return;
+      lastSend = now;
+
+      const FutomomoDeg = hizaAngle * 180 / Math.PI;
+      const suneDeg = kakatoAngle * 180 / Math.PI;
+
+      fetch("/set_angles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          // Futomomo_deg: FutomomoDeg,
+          // hiza_deg:  suneDeg,
+          hizaAngle: 360 - hizaAngle,
+          kakatoAngle, kakatoAngle
+        })
+      }).catch(err => console.error(err));
+    }
+
+    // ------------------------
+    //  タッチ処理
+    // ------------------------
+    canvas.addEventListener("touchstart", e => {
+      e.preventDefault();
+      for (const t of e.changedTouches) {
+        if (primaryId === null) {
+          primaryId = t.identifier;   // 1本目 → sune
+        } else if (secondaryId === null) {
+          secondaryId = t.identifier; // 2本目 → Futomomo
+        }
+      }
+    }, { passive: false });
+
+    canvas.addEventListener("touchmove", e => {
+      e.preventDefault();
+
+      for (const t of e.changedTouches) {
+        const pos = getPos(t);
+
+        // kakatoAngle = 70
+
+        if (t.identifier === primaryId) {
+          // 踵→タッチ位置 → すねの絶対角度
+
+          const TouchKakatoMathX = getMathPosX(kakato.x, pos.x)
+          const TouchKakatoMathY = getMathPosY(kakato.y, pos.y)
+          // console.log(TouchKakatoMathX, TouchKakatoMathY)
+          // const dx = pos.x - kakato.x;
+          // const dy = -(pos.y - kakato.y);
+          // dx = TouchKakatoMathX
+          // kakatoAngle = Math.atan2(dx, dy);
+          kakatoAngle = 90 - 180 / Math.PI * Math.atan2(-TouchKakatoMathX, TouchKakatoMathY)
+          // console.log(kakatoAngle)
+        }
+
+        if (t.identifier === secondaryId) {
+          // // 膝→タッチ位置 → 太ももの絶対角度
+          const TouchHizaMathX = getMathPosX(hiza.x, pos.x)
+          const TouchHizaMathY = getMathPosY(hiza.y, pos.y)
+
+          hizaAngle = kakatoAngle + 90- 180 / Math.PI * Math.atan2(TouchHizaMathX, TouchHizaMathY)
+          console.log(hizaAngle)
+        }
+      }
+
+      calcJointPositions();
+      drawLeg();
+      sendAngles();
+    }, { passive: false });
+
+    canvas.addEventListener("touchend", e => {
+      e.preventDefault();
+      for (const t of e.changedTouches) {
+        if (t.identifier === primaryId)  primaryId = null;
+        if (t.identifier === secondaryId) secondaryId = null;
+      }
+    }, { passive: false });
+
+    canvas.addEventListener("touchcancel", e => {
+      e.preventDefault();
+      for (const t of e.changedTouches) {
+        if (t.identifier === primaryId)  primaryId = null;
+        if (t.identifier === secondaryId) secondaryId = null;
+      }
+    }, { passive: false });
+
+    function getPos(touch) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: touch.clientX - rect.left,
+        y: touch.clientY - rect.top
+      };
+    }
+
+    // 初期描画
+    drawLeg();
+  </script>
+</body>
+</html>
