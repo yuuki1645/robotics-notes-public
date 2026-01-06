@@ -29,10 +29,10 @@ SERVO_MAP = {
     "R_HIP2": 1,
     "R_KNEE": 2,
     "R_HEEL": 3,
-    "L_HIP1": 4,
-    "L_HIP2": 5,
-    "L_KNEE": 6,
-    "L_HEEL": 7,
+    "L_HIP1": 8,
+    "L_HIP2": 9,
+    "L_KNEE": 10,
+    "L_HEEL": 11,
 }
 
 

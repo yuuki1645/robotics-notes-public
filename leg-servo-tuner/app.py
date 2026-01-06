@@ -16,6 +16,8 @@ def api_move():
     servo = data["servo"]
     angle = float(data["angle"])
 
+    print(f"[DEBUG] servo={servo}, angle={angle}")
+
     move_servo(servo, angle)
 
     return jsonify({
@@ -26,4 +28,4 @@ def api_move():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5000, debug=True)

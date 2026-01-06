@@ -34,9 +34,7 @@ const servoSelect = document.getElementById("servo");
 
 slider.addEventListener("input", () => {
   angleValue.textContent = slider.value;
-});
 
-slider.addEventListener("change", () => {
   fetch("/api/move", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
@@ -46,6 +44,17 @@ slider.addEventListener("change", () => {
     })
   });
 });
+
+// slider.addEventListener("change", () => {
+//   fetch("/api/move", {
+//     method: "POST",
+//     headers: {"Content-Type": "application/json"},
+//     body: JSON.stringify({
+//       servo: servoSelect.value,
+//       angle: slider.value
+//     })
+//   });
+// });
 </script>
 
 </body>
