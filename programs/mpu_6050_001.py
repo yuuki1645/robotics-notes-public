@@ -43,11 +43,21 @@ def get_accel():
 pitch, roll, yaw = 0.0, 0.0, 0.0
 alpha = 0.98
 
+count = 0
+
 def update_angles(dt):
     global pitch, roll, yaw
+    global count
 
     ax, ay, az = get_accel()
     gx, gy, gz = get_gyro()
+
+    count += 1
+    if count == 10:
+        # print(f"gx={gx:>6.0f}, gy={gy:>6.0f}, gz={gz:>6.0f}")
+        length = math.sqrt(ax**2 + ay**2 + az**2)
+        print(f"len={length:>6.2f}, ax={ax:>6.2f}, ay={ay:>6.2f}, az={az:>6.2f}")
+        count = 0
 
     acc_pitch = math.degrees(math.atan2(ay, math.sqrt(ax*ax + az*az)))
     acc_roll  = math.degrees(math.atan2(-ax, math.sqrt(ay*ay + az*az)))

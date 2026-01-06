@@ -5,6 +5,16 @@ from board import SCL, SDA
 import busio
 import time
 
+CH_R_KOKAN_1 = 0
+CH_R_KOKAN_2 = 1
+CH_R_HIZA = 2
+CH_R_KAKATO = 3
+
+CH_L_KOKAN_1 = 8
+CH_L_KOKAN_2 = 9
+CH_L_HIZA = 10
+CH_L_KAKATO = 11
+
 # I2Cを初期化
 i2c = busio.I2C(SCL, SDA)
 
@@ -18,11 +28,11 @@ def set_servo_angle(channel: int, deg: float):
 
     print(f"[DEBUG] set_servo_angle({deg})")
 
-    if channel not in [0, 1]:
-        return {
-            "status": "error",
-            "message": f"channel({channel}) not in [0, 1]"
-        }
+    # if channel not in [0, 1]:
+    #     return {
+    #         "status": "error",
+    #         "message": f"channel({channel}) not in [0, 1]"
+    #     }
     
     if deg < 0.0:
         return {
@@ -56,8 +66,20 @@ def set_servo_angle(channel: int, deg: float):
         "duty_cycle": duty_cycle
     }
 
-result = set_servo_angle(
-    int(sys.argv[1]),   # ch
-    float(sys.argv[2])  # deg
-)
+if len(sys.argv) == 4:
+    time.sleep(float(sys.argv[3]))
+
+
+
+if sys.argv[1] == "r":
+    set_servo_angle(CH_R_KAKATO, 90)
+    set_servo_angle(CH_R_HIZA, 130)
+    set_servo_angle(CH_R_KOKAN_1, 70)
+    set_servo_angle(CH_R_KOKAN_2, 90)
+else:
+    result = set_servo_angle(
+        int(sys.argv[1]),   # ch
+        float(sys.argv[2])  # deg
+    )
+
 pprint(result)
