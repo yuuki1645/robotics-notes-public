@@ -75,7 +75,7 @@ class RHip1Kinematics(ServoKinematicsBase):
 
     def logical_to_physical(self, logical_deg: float) -> float:
         l = self.clamp_logical(logical_deg)
-        return l
+        return l + 70.0
 
 
 class RHip2Kinematics(ServoKinematicsBase):
@@ -84,7 +84,7 @@ class RHip2Kinematics(ServoKinematicsBase):
 
     def logical_to_physical(self, logical_deg: float) -> float:
         l = self.clamp_logical(logical_deg)
-        return l
+        return 200.0 - l
 
 class LHeelKinematics(ServoKinematicsBase):
     def __init__(self):
