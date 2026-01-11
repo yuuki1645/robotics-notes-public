@@ -110,7 +110,7 @@ class LHip1Kinematics(ServoKinematicsBase):
 
     def logical_to_physical(self, logical_deg: float) -> float:
         l = self.clamp_logical(logical_deg)
-        return l
+        return l + 95.0
 
 class LHip2Kinematics(ServoKinematicsBase):
     def __init__(self):
@@ -118,7 +118,7 @@ class LHip2Kinematics(ServoKinematicsBase):
 
     def logical_to_physical(self, logical_deg: float) -> float:
         l = self.clamp_logical(logical_deg)
-        return l
+        return 164.0 - l
 
 # ★ 8インスタンスを生成して辞書へ
 KINEMATICS = {
