@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 import json
-from servo import move_servo_logical, move_servo_physical
+from servo import SERVO_MAP, move_servo_logical, move_servo_physical
+from kinematics import KINEMATICS
 
 state_path = "./state.json"
 
@@ -36,6 +37,24 @@ SERVO_CH_2_NAME = {
 	10: "L_KNEE",
 	11: "L_HEEL",
 }
+
+@app.get("/servos")
+def get_servos():
+	"""全サーボの情報を返す"""
+	servos = []
+	for name, ch in SERVO_MAP.items():
+		kin = KINEMATICS[name]
+		servos.append({
+			"name": name,
+			"ch": ch,
+			"logical_lo": kin.logical_range.lo,
+			"logical_hi": kin.logical_range.hi,
+		})
+	return jsonify({
+		"servos": servos,
+		"physical_min": PHYSICAL_MIN,
+		"physical_max": PHYSICAL_MAX,
+	})
 
 @app.get("/set_logical")
 def set_logical():

@@ -5,75 +5,101 @@ import json
 import os
 from typing import Any, Dict
 
+import requests
 from flask import Flask, render_template, request, jsonify
-
-from servo import move_servo_logical, move_servo_physical, SERVO_MAP, PHYSICAL_MIN, PHYSICAL_MAX
-from kinematics import KINEMATICS
+from utils import clamp
 
 app = Flask(__name__)
 
 STATE_PATH = os.path.join(os.path.dirname(__file__), "state.json")
 
-# state.json 形式（自動生成）
-# {
-#   "last_mode": "logical" | "physical",
-#   "servos": {
-#     "R_KNEE": {"logical": 10, "physical": 70},
-#     ...
-#   }
-# }
+SERVO_DAEMON_URL = "http://localhost:5000"
 
-def load_state() -> Dict[str, Any]:
-    if not os.path.exists(STATE_PATH):
-        return {"last_mode": "logical", "servos": {}}
+# サーボ名 -> チャンネル番号のマッピング（servo_daemon/app.py と一致させる）
+SERVO_NAME_TO_CH = {
+    "R_HIP1": 0,
+    "R_HIP2": 1,
+    "R_KNEE": 2,
+    "R_HEEL": 3,
+    "L_HIP1": 8,
+    "L_HIP2": 9,
+    "L_KNEE": 10,
+    "L_HEEL": 11,
+}
+
+# チャンネル番号 -> サーボ名のマッピング（逆引き用）
+CH_TO_SERVO_NAME = {v: k for k, v in SERVO_NAME_TO_CH.items()}
+
+def get_servo_daemon_state() -> Dict[str, Any]:
+    """servo_daemonから状態を取得する"""
     try:
-        with open(STATE_PATH, "r", encoding="utf-8") as f:
-            data = json.load(f) or {}
-        if "last_mode" not in data:
-            data["last_mode"] = "logical"
-        if "servos" not in data or not isinstance(data["servos"], dict):
-            data["servos"] = {}
-        return data
+        response = requests.get(f"{SERVO_DAEMON_URL}/state", timeout=5)
+        if response.status_code == 200:
+            return response.json()
     except Exception as e:
-        print("[WARN] failed to load state.json:", e)
-        return {"last_mode": "logical", "servos": {}}
+        print("[WARN] failed to get servo daemon state:", e)
+    return {}
 
-def save_state(state: Dict[str, Any]) -> None:
+def get_servo_info() -> Dict[str, Any]:
+    """servo_daemonからサーボ情報を取得する"""
     try:
-        with open(STATE_PATH, "w", encoding="utf-8") as f:
-            json.dump(state, f, ensure_ascii=False, indent=2)
+        response = requests.get(f"{SERVO_DAEMON_URL}/servos", timeout=5)
+        if response.status_code == 200:
+            return response.json()
     except Exception as e:
-        print("[WARN] failed to save state.json:", e)
-
-def default_logical(servo_name: str) -> float:
-    kin = KINEMATICS[servo_name]
-    return round((kin.logical_range.lo + kin.logical_range.hi) / 2)
-
-def default_physical(_: str) -> float:
-    return 135.0
+        print("[WARN] failed to get servo info from servo_daemon:", e)
+    return {
+        "servos": [],
+        "physical_min": 0.0,
+        "physical_max": 270.0,
+    }
 
 @app.get("/")
 def index():
-    state = load_state()
-    last_mode = state.get("last_mode", "logical")
-    per_servo = state.get("servos", {})
+    # servo_daemon から最新の状態を取得
+    servo_info = get_servo_info()
+    daemon_state = get_servo_daemon_state()
+
+    # サーボ情報から論理角レンジなどを取得
+    servos_data = servo_info.get("servos", [])
+    physical_min = servo_info.get("physical_min", 0.0)
+    physical_max = servo_info.get("physical_max", 270.0)
+
+    # サーボ名をキーとした辞書を作成
+    servo_info_map = {s["name"]: s for s in servos_data}
 
     servos = []
-    for name in SERVO_MAP.keys():
-        kin = KINEMATICS[name]
-        entry = per_servo.get(name, {}) if isinstance(per_servo.get(name, {}), dict) else {}
+    for servo_data in servos_data:
+        name = servo_data["name"]
+        ch = servo_data["ch"]
+        ch_str = str(ch)
 
-        last_logical = entry.get("logical", default_logical(name))
-        last_physical = entry.get("physical", default_physical(name))
+        # servo_daemon の状態から取得（チャンネル番号をキーとする）
+        daemon_entry = daemon_state.get(ch_str, {})
+        if isinstance(daemon_entry, dict):
+            last_logical = daemon_entry.get("logical")
+            last_physical = daemon_entry.get("physical")
+        else:
+            last_logical = None
+            last_physical = None
+
+        # デフォルト値の設定
+        logical_lo = servo_data["logical_lo"]
+        logical_hi = servo_data["logical_hi"]
+
+        if last_logical is None:
+            last_logical = default_logical(logical_lo, logical_hi)
+        if last_physical is None:
+            last_physical = default_physical()
 
         # clamp
-        last_logical = max(kin.logical_range.lo, min(kin.logical_range.hi, float(last_logical)))
-        last_physical = max(PHYSICAL_MIN, min(PHYSICAL_MAX, float(last_physical)))
+        last_logical = clamp(float(last_logical), logical_lo, logical_hi)
+        last_physical = clamp(float(last_physical), physical_min, physical_max)
 
         servos.append({
             "name": name,
-            "logical_lo": kin.logical_range.lo,
-            "logical_hi": kin.logical_range.hi,
+            "logical_lo": logical_lo,
+            "logical_hi": logical_hi,
             "last_logical": last_logical,
             "last_physical": last_physical,
         })
@@ -89,33 +115,58 @@ def index():
 @app.post("/api/move")
 def api_move():
     data = request.json or {}
-    servo = data["servo"]
+    servo_name = data["servo"]
     mode = data.get("mode", "logical")
     angle = float(data["angle"])
 
-    if mode == "physical":
-        result = move_servo_physical(servo, angle)
-    else:
-        mode = "logical"
-        result = move_servo_logical(servo, angle)
+    # サーボ名からチャンネル番号を取得
+    if servo_name not in SERVO_NAME_TO_CH:
+        return jsonify({"status": "error", "message": f"Unknown servo: {servo_name}"}), 400
 
-    # 保存
-    state = load_state()
-    state["last_mode"] = mode
-    state.setdefault("servos", {})
-    state["servos"].setdefault(servo, {})
+    ch = SERVO_NAME_TO_CH[servo_name]
 
-    if mode == "physical":
-        state["servos"][servo]["physical"] = angle
-    else:
-        state["servos"][servo]["logical"] = angle
-        # logical → physical の結果が返っていれば保存しておく（次回の物理モード初期値にも使える）
-        if isinstance(result, dict) and "physical" in result:
-            state["servos"][servo]["physical"] = float(result["physical"])
+    # servo_daemon のAPIを呼び出す
+    try:
+        if mode == "physical":
+            url = f"{SERVO_DAEMON_URL}/set_physical"
+            params = {"ch": ch, "p_ang": angle}
+        else:
+            mode = "logical"
+            url = f"{SERVO_DAEMON_URL}/set_logical"
+            params = {"ch": ch, "l_ang": angle}
 
-    save_state(state)
+        response = requests.get(url, params=params, timeout=5)
+        if response.status_code != 200:
+            return jsonify({
+                "status": "error",
+                "message": f"servo_daemon returned {response.status_code}"
+            }), 500
 
-    return jsonify({"status": "ok", "mode": mode, **result})
+        # servo_daemon から最新の状態を取得して返す
+        daemon_state = get_servo_daemon_state()
+        ch_str = str(ch)
+        daemon_entry = daemon_state.get(ch_str, {})
+
+        result = {
+            "status": "ok",
+            "mode": mode,
+            "servo": servo_name,
+        }
+
+        if isinstance(daemon_entry, dict):
+            if "logical" in daemon_entry:
+                result["logical"] = daemon_entry["logical"]
+            if "physical" in daemon_entry:
+                result["physical"] = daemon_entry["physical"]
+
+        return jsonify(result)
+
+    except requests.exceptions.RequestException as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Network error: {str(e)}"
+        }), 500
+        
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
