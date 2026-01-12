@@ -1,31 +1,12 @@
 from flask import Flask, jsonify, request
-import json
 from servo import SERVO_MAP, move_servo_logical, move_servo_physical
 from kinematics import KINEMATICS
-
-state_path = "./state.json"
+from state_manager import StateManager
 
 app = Flask(__name__)
 
-def _load_state():
-	global state
-	try:
-		with open(state_path, "r") as f:
-			state = json.load(f)
-		return state
-	except Exception:
-		return {}
-
-def _save_state():
-	global state
-	with open(state_path, "w") as f:
-		json.dump(state, f, ensure_ascii=False, indent=4)
-
-state = _load_state()
-
-@app.get("/state")
-def get_state():
-	return state
+# 状態管理インスタンスを作成
+state_manager = StateManager(state_path="./state.json")
 
 SERVO_CH_2_NAME = {
 	0: "R_HIP1",
@@ -37,6 +18,11 @@ SERVO_CH_2_NAME = {
 	10: "L_KNEE",
 	11: "L_HEEL",
 }
+
+@app.get("/state")
+def get_state():
+	"""現在の状態を返す"""
+	return state_manager.get_all()
 
 @app.get("/servos")
 def get_servos():
@@ -56,31 +42,30 @@ def get_servos():
 		})
 	return jsonify({"servos": servos})
 
+def _set_servo_angle(ch: int, angle: float, mode: str):
+	"""サーボ角度を設定する共通処理"""
+	if mode == "logical":
+		result = move_servo_logical(SERVO_CH_2_NAME[ch], angle)
+	else:
+		result = move_servo_physical(SERVO_CH_2_NAME[ch], angle)
+
+	state_manager.set(str(ch), {
+		"logical": result["logical"],
+		"physical": result["physical"]
+	})
+	return jsonify({"status": "ok"})
+
 @app.get("/set_logical")
 def set_logical():
 	ch = int(request.args.get("ch"))
 	logical_angle = float(request.args.get("l_ang"))
-	result = move_servo_logical(SERVO_CH_2_NAME[ch], logical_angle)
-	print("result:", result)
-	state[str(ch)] = {
-		"logical": result["logical"],
-		"physical": result["physical"]
-	}
-	_save_state()
-	return jsonify({"status": "ok"})
+	return _set_servo_angle(ch, logical_angle, "logical")
 
 @app.get("/set_physical")
 def set_physical():
 	ch = int(request.args.get("ch"))
 	physical_angle = float(request.args.get("p_ang"))
-	result = move_servo_physical(SERVO_CH_2_NAME[ch], physical_angle)
-	print("result:", result)
-	state[str(ch)] = {
-		"logical": result["logical"],
-		"physical": result["physical"]
-	}
-	_save_state()
-	return jsonify({"status": "ok"})
+	return _set_servo_angle(ch, physical_angle, "physical")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

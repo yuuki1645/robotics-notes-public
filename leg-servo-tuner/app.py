@@ -23,9 +23,6 @@ SERVO_NAME_TO_CH = {
     "L_HEEL": 11,
 }
 
-# チャンネル番号 -> サーボ名のマッピング（逆引き用）
-CH_TO_SERVO_NAME = {v: k for k, v in SERVO_NAME_TO_CH.items()}
-
 def get_servo_daemon_state() -> Dict[str, Any]:
     """servo_daemonから状態を取得する"""
     try:
@@ -44,11 +41,7 @@ def get_servo_info() -> Dict[str, Any]:
             return response.json()
     except Exception as e:
         print("[WARN] failed to get servo info from servo_daemon:", e)
-    return {
-        "servos": [],
-        "physical_min": 0.0,
-        "physical_max": 270.0,
-    }
+    return {"servos": []}
 
 @app.get("/")
 def index():
@@ -165,4 +158,4 @@ def api_move():
         
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5001, debug=True)
