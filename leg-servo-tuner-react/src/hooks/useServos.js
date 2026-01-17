@@ -11,6 +11,7 @@ export function useServos() {
       try {
         setLoading(true);
         const data = await fetchServos();
+        console.log('servos', data);
         setServos(data);
         setError(null);
       } catch (err) {
