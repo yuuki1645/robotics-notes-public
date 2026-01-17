@@ -1,9 +1,11 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 from servo import SERVO_MAP, move_servo_logical, move_servo_physical
 from kinematics import KINEMATICS
 from state_manager import StateManager
 
 app = Flask(__name__)
+CORS(app)  # すべてのオリジンからのアクセスを許可
 
 # 状態管理インスタンスを作成
 state_manager = StateManager(state_path="./state.json")
