@@ -3,8 +3,8 @@ import { getAngleAtTime } from '../utils/interpolation';
 import './Timeline.css';
 
 export default function TimelineLabels({ keyframes, currentTime }) {
-  // 現在時刻での各サーボの角度を計算
-  const currentAngles = getAngleAtTime(keyframes || [], currentTime || 0);
+  // 現在時刻での各サーボの角度を計算（すべてのチャンネルを考慮）
+  const currentAngles = getAngleAtTime(keyframes || [], currentTime || 0, SERVO_CHANNELS);
   
   return (
     <div className="timeline-labels">

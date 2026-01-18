@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getAngleAtTime } from '../utils/interpolation';
 import { moveServos } from '../api/servoApi';
-import { INTERPOLATION_INTERVAL } from '../constants';
+import { INTERPOLATION_INTERVAL, SERVO_CHANNELS } from '../constants';  // SERVO_CHANNELSを追加
 
 /**
  * モーション再生とサーボ制御を行うカスタムフック
@@ -175,19 +175,12 @@ export function useInterpolation(keyframes, duration, mode = 'logical') {
       if (timestamp - lastUpdateTime >= INTERPOLATION_INTERVAL) {
         // 現在時間における各サーボの角度を計算（線形補間）
         // 戻り値: { [ch]: angle } の形式（例: { 0: 45.5, 1: 90.0, ... }）
-        const angles = getAngleAtTime(keyframes, newTime);
-        
-        // 角度データが存在する場合のみサーボを制御
+        const angles = getAngleAtTime(keyframes, newTime, SERVO_CHANNELS);  // SERVO_CHANNELSを追加
         if (Object.keys(angles).length > 0) {
-          // 複数のサーボを同時に制御
-          // mode: 'logical' の場合は論理角、'physical' の場合は物理角を送信
           moveServos(angles, mode).catch(err => {
-            // エラーが発生した場合はコンソールに出力（再生は継続）
             console.error('Failed to move servos:', err);
           });
         }
-        
-        // 最後の更新時刻を記録
         lastUpdateTime = timestamp;
       }
       
@@ -240,7 +233,7 @@ export function useInterpolation(keyframes, duration, mode = 'logical') {
     pausedTimeRef.current = clampedTime;
     
     // その時間でのサーボ角度を計算して送信
-    const angles = getAngleAtTime(keyframes, clampedTime);
+    const angles = getAngleAtTime(keyframes, clampedTime, SERVO_CHANNELS);  // SERVO_CHANNELSを追加
     if (Object.keys(angles).length > 0) {
       moveServos(angles, mode).catch(err => {
         console.error('Failed to move servos:', err);
