@@ -53,9 +53,10 @@ function App() {
     }
   }
   
-  const handleTimeClick = (time) => {
+  const handleTimeClick = (time, channel) => {
+    console.log("handleTimeClick", time, channel);
     if (currentMotion) {
-      addKeyframe(time);
+      addKeyframe(time, channel); // チャンネルも渡す
     }
   };
   

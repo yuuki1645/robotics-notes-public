@@ -65,13 +65,30 @@ export default function Timeline({
     // スクロール可能なトラック部分をクリックした場合
     const trackContent = e.target.closest('.timeline-track-content');
     const ruler = e.target.closest('.timeline-ruler');
-    if (trackContent || ruler) {
+    
+    if (trackContent) {
+      // クリックされたトラックのチャンネルを特定
+      const track = e.target.closest('.timeline-track');
+      if (!track) return;
+      
+      // data-channel属性からチャンネルを取得
+      const channel = parseInt(track.getAttribute('data-channel'));
+      if (isNaN(channel)) return;
+      
       if (!scrollableRef.current) return;
       const rect = scrollableRef.current.getBoundingClientRect();
       const clientX = getClientX(e);
       const x = clientX - rect.left; // スクロール可能エリア内の相対位置
       const time = xToTime(x);
-      onTimeClick(time);
+      onTimeClick(time, channel); // チャンネルも渡す
+    } else if (ruler) {
+      // ルーラーをクリックした場合は全チャンネルに追加（既存の動作）
+      if (!scrollableRef.current) return;
+      const rect = scrollableRef.current.getBoundingClientRect();
+      const clientX = getClientX(e);
+      const x = clientX - rect.left;
+      const time = xToTime(x);
+      onTimeClick(time, null); // チャンネルなし（全チャンネル）
     }
   };
   
@@ -181,6 +198,7 @@ export default function Timeline({
             <div 
               key={channel} 
               className="timeline-track"
+              data-channel={channel} // チャンネル情報を追加
               onClick={handleTimelineClick}
               onTouchEnd={handleTimelineClick}
             >
@@ -197,6 +215,11 @@ export default function Timeline({
                 
                 {/* キーフレーム */}
                 {keyframes.map((keyframe, index) => {
+                  // このチャンネルにキーフレームが存在するかチェック
+                  if (keyframe.angles[channel] === undefined) {
+                    return null; // このチャンネルにキーフレームがない場合は表示しない
+                  }
+                  
                   const x = timeToX(keyframe.time);
                   const isSelected = selectedKeyframeIndex === index;
                   const angle = keyframe.angles[channel] ?? 90;
