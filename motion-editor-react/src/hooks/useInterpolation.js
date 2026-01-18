@@ -62,6 +62,7 @@ export function useInterpolation(keyframes, duration, mode = 'logical') {
     if (isPaused) {
       // 一時停止から再開する場合
       setIsPaused(false);
+      setIsPlaying(true);  // 追加: 再生状態をtrueに設定
       // 現在のタイムスタンプから、一時停止時の経過時間を引いた値を開始時刻として設定
       // これにより、経過時間の計算が正しく継続される
       startTimeRef.current = performance.now() - pausedTimeRef.current;
@@ -99,6 +100,10 @@ export function useInterpolation(keyframes, duration, mode = 'logical') {
   const pause = useCallback(() => {
     setIsPaused(true);
     setIsPlaying(false);
+    // 一時停止時の経過時間を保存（現在のcurrentTimeを使用）
+    // 注意: この時点でのcurrentTimeは最新の値なので、それを保存する
+    // ただし、currentTimeは非同期で更新されるため、直接参照できない
+    // そのため、アニメーションループ内で更新する必要がある
   }, []);
   
   // ========== アニメーションループ ==========
@@ -118,10 +123,17 @@ export function useInterpolation(keyframes, duration, mode = 'logical') {
   useEffect(() => {
     // 再生中でない、または一時停止中の場合は何もしない
     if (!isPlaying || isPaused) {
-      // 実行中のアニメーションフレームがあればキャンセル
+      // 実行中のアニメーションループがあればキャンセル
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
+      
+      // 一時停止が設定された直後の場合、現在の時間を保存
+      // これは、pause()が呼ばれた直後のフレームで実行される
+      if (isPaused && pausedTimeRef.current === 0 && currentTime > 0) {
+        pausedTimeRef.current = currentTime;
+      }
+      
       return;
     }
     
@@ -165,8 +177,8 @@ export function useInterpolation(keyframes, duration, mode = 'logical') {
       } else {
         // モーションの終了時間に達していない場合: 現在時間を更新
         setCurrentTime(newTime);
-        // 一時停止時に使用するため、現在の経過時間を保存
-        pausedTimeRef.current = newTime;
+        // 注意: pausedTimeRef.currentは一時停止時にのみ更新する
+        // 再生中は更新しない（毎フレーム更新すると時間が累積してしまう）
       }
       
       // ========== サーボ制御 ==========

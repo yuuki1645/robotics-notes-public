@@ -32,7 +32,12 @@ function App() {
     updateKeyframeTime,
     updateKeyframeAngle,
   } = useKeyframes(currentMotion, updateMotion);
-  
+    
+  // モーションのdurationを最大時間に制限
+  const motionDuration = currentMotion 
+    ? Math.min(currentMotion.duration, MAX_MOTION_DURATION)
+    : DEFAULT_MOTION_DURATION;
+
   const {
     isPlaying,
     isPaused,
@@ -45,8 +50,8 @@ function App() {
     pause,
     stop,
     seekToTime,  // 追加
-  } = useInterpolation(keyframes, currentMotion?.duration || DEFAULT_MOTION_DURATION, 'logical');
-  
+  } = useInterpolation(keyframes, motionDuration, 'logical');  // currentMotion?.duration || DEFAULT_MOTION_DURATION を motionDuration に変更
+
   const handlePlayheadDrag = (time) => {
     seekToTime(time);
   };
@@ -152,10 +157,7 @@ function App() {
     );
   }
   
-  // モーションのdurationを最大時間に制限
-  const motionDuration = currentMotion 
-    ? Math.min(currentMotion.duration, MAX_MOTION_DURATION)
-    : DEFAULT_MOTION_DURATION;
+
   
   return (
     <div className="app">
