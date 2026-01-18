@@ -41,6 +41,7 @@
   border-bottom: 1px solid #2a2a3e;
   user-select: none;
   -webkit-user-select: none;
+  box-sizing: border-box; /* borderを含めた高さ計算 */
 }
 
 /* 右側：スクロール可能なタイムラインエリア */
@@ -117,6 +118,7 @@
   cursor: crosshair;
   position: relative;
   touch-action: pan-y;
+  box-sizing: border-box; /* borderを含めた高さ計算 */
 }
 
 .timeline-track-content {
@@ -197,6 +199,10 @@
   
   .timeline-track {
     height: 70px;
+  }
+  
+  .timeline-track-label {
+    height: 70px; /* トラックと同じ高さに変更 */
   }
   
   .timeline-keyframe {

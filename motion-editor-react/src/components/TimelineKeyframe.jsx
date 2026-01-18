@@ -10,12 +10,17 @@ export default function TimelineKeyframe({
   onClick,
   onStartDrag,
 }) {
+  const handleClick = (e) => {
+    e.stopPropagation();
+    onClick(keyframeIndex, channel); // チャンネル情報も渡す
+  };
+  
   return (
     <div
       className={`timeline-keyframe ${isSelected ? 'selected' : ''}`}
       style={{ left: `${x}px` }}
-      onClick={onClick}
-      onTouchEnd={onClick}
+      onClick={handleClick}
+      onTouchEnd={handleClick}
       onMouseDown={(e) => onStartDrag(e, keyframeIndex, channel)}
       onTouchStart={(e) => onStartDrag(e, keyframeIndex, channel)}
       title={`時間: ${(keyframe.time / 1000).toFixed(2)}s, 角度: ${angle.toFixed(1)}°`}

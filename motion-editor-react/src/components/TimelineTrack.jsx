@@ -6,6 +6,7 @@ export default function TimelineTrack({
   keyframes,
   currentTime,
   selectedKeyframeIndex,
+  selectedChannel,
   timeToX,
   onTimeClick,
   onKeyframeClick,
@@ -62,7 +63,7 @@ export default function TimelineTrack({
           }
           
           const x = timeToX(keyframe.time);
-          const isSelected = selectedKeyframeIndex === index;
+          const isSelected = selectedKeyframeIndex === index && selectedChannel === channel;
           const angle = keyframe.angles[channel] ?? 90;
           
           return (
@@ -74,10 +75,7 @@ export default function TimelineTrack({
               x={x}
               isSelected={isSelected}
               angle={angle}
-              onClick={(e) => {
-                e.stopPropagation();
-                onKeyframeClick(index);
-              }}
+              onClick={onKeyframeClick}
               onStartDrag={onKeyframeStartDrag}
             />
           );

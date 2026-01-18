@@ -14,7 +14,8 @@ export default function Timeline({
   onTimeClick, 
   onKeyframeClick,
   onKeyframeDrag,
-  selectedKeyframeIndex 
+  selectedKeyframeIndex,
+  selectedChannel,
 }) {
   const timelineRef = useRef(null);
   const scrollableRef = useRef(null);
@@ -26,9 +27,9 @@ export default function Timeline({
     onKeyframeDrag
   );
   
-  const handleKeyframeClick = (index) => {
+  const handleKeyframeClick = (index, channel) => {
     if (!isDragging) {
-      onKeyframeClick(index);
+      onKeyframeClick(index, channel); // チャンネル情報も渡す
     }
   };
   
@@ -66,6 +67,7 @@ export default function Timeline({
               keyframes={keyframes}
               currentTime={currentTime}
               selectedKeyframeIndex={selectedKeyframeIndex}
+              selectedChannel={selectedChannel}
               timeToX={timeToX}
               xToTime={xToTime}
               onTimeClick={onTimeClick}

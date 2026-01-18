@@ -1,4 +1,40 @@
 import { SERVO_DAEMON_URL } from '../constants';
+import { clamp } from '../utils';
+
+/**
+ * サーボ情報を取得
+ */
+export async function fetchServos() {
+  const response = await fetch(`${SERVO_DAEMON_URL}/servos`);
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch servos');
+  }
+  
+  const data = await response.json();
+  const servosData = data.servos || [];
+  
+  // サーボデータを整形
+  const formattedServos = servosData.map(servo => {
+    const lastLogical = clamp(
+      parseFloat(servo.last_logical ?? servo.default_logical ?? 0),
+      servo.logical_lo,
+      servo.logical_hi
+    );
+    
+    return {
+      name: servo.name,
+      ch: servo.ch,
+      logical_lo: servo.logical_lo,
+      logical_hi: servo.logical_hi,
+      physical_min: servo.physical_min,
+      physical_max: servo.physical_max,
+      last_logical: lastLogical,
+    };
+  });
+  
+  return formattedServos;
+}
 
 /**
  * サーボを動かす

@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { useMotion } from './hooks/useMotion';
 import { useKeyframes } from './hooks/useKeyframes';
 import { useInterpolation } from './hooks/useInterpolation';
+import { useServos } from './hooks/useServos';
+import { SERVO_NAME_TO_CH } from './constants';
 import { MAX_MOTION_DURATION, DEFAULT_MOTION_DURATION } from './constants';
 import MotionList from './components/MotionList';
 import Timeline from './components/Timeline';
-import KeyframeEditor from './components/KeyframeEditor';
+import ServoAngleEditor from './components/ServoAngleEditor';
 import PlaybackControls from './components/PlaybackControls';
 import './App.css';
 
@@ -27,7 +29,6 @@ function App() {
     addKeyframe,
     deleteKeyframe,
     updateKeyframeTime,
-    updateKeyframeAngles,
     updateKeyframeAngle,
   } = useKeyframes(currentMotion, updateMotion);
   
@@ -44,32 +45,52 @@ function App() {
     stop,
   } = useInterpolation(keyframes, currentMotion?.duration || DEFAULT_MOTION_DURATION, 'logical');
   
+  const { servos, loading: servosLoading } = useServos();
+  
   const [selectedKeyframeIndex, setSelectedKeyframeIndex] = useState(null);
+  const [selectedChannel, setSelectedChannel] = useState(null);
   
   // モーションが切り替わったら選択をリセット
   if (currentMotion && selectedKeyframeIndex !== null) {
     if (selectedKeyframeIndex >= keyframes.length) {
       setSelectedKeyframeIndex(null);
+      setSelectedChannel(null);
     }
   }
   
   const handleTimeClick = (time, channel) => {
-    console.log("handleTimeClick", time, channel);
     if (currentMotion) {
-      addKeyframe(time, channel); // チャンネルも渡す
+      addKeyframe(time, channel);
     }
   };
   
-  const handleKeyframeClick = (index) => {
+  const handleKeyframeClick = (index, channel) => {
+    console.log("handleKeyframeClick", index, channel);
     setSelectedKeyframeIndex(index);
+    setSelectedChannel(channel); // これを追加
   };
   
   const handleKeyframeDrag = (index, newTime) => {
     updateKeyframeTime(index, newTime);
   };
   
+  const handleAngleUpdate = (keyframeIndex, channel, angle) => {
+    updateKeyframeAngle(keyframeIndex, channel, angle);
+  };
+  
+  const handleKeyframeDelete = (index) => {
+    deleteKeyframe(index);
+    setSelectedKeyframeIndex(null);
+    setSelectedChannel(null);
+  };
+  
   const selectedKeyframe = selectedKeyframeIndex !== null 
     ? keyframes[selectedKeyframeIndex] 
+    : null;
+  
+  // 選択されたチャンネルのサーボ情報を取得
+  const selectedServo = selectedChannel !== null
+    ? servos.find(s => s.ch === selectedChannel)
     : null;
   
   // 初期化中はローディング表示
@@ -116,6 +137,7 @@ function App() {
             onKeyframeClick={handleKeyframeClick}
             onKeyframeDrag={handleKeyframeDrag}
             selectedKeyframeIndex={selectedKeyframeIndex}
+            selectedChannel={selectedChannel}
           />
           
           <PlaybackControls
@@ -133,14 +155,13 @@ function App() {
           />
         </div>
         
-        <KeyframeEditor
+        <ServoAngleEditor
           keyframe={selectedKeyframe}
           keyframeIndex={selectedKeyframeIndex}
-          onUpdateAngle={updateKeyframeAngles}
-          onDelete={(index) => {
-            deleteKeyframe(index);
-            setSelectedKeyframeIndex(null);
-          }}
+          channel={selectedChannel}
+          servo={selectedServo}
+          onUpdateAngle={handleAngleUpdate}
+          onDelete={handleKeyframeDelete}
         />
       </div>
     </div>

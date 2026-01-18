@@ -1,3 +1,11 @@
+// ガイド画像のマッピング
+export const GUIDE_MAP = {
+  "KNEE": "/guides/knee.JPG",
+  "HEEL": "/guides/heel.JPG",
+  "HIP1": "/guides/hip1.JPG",
+  "HIP2": "/guides/hip2.JPG",
+};
+
 // サーボ名 -> チャンネル番号のマッピング（servo_daemon/app.py と一致させる）
 export const SERVO_NAME_TO_CH = {
   "R_HIP1": 0,
@@ -43,3 +51,7 @@ export const DEFAULT_MOTION_DURATION = 5000; // 5秒
 
 // キーフレーム間の最小間隔（ミリ秒）- 重複を防ぐため
 export const MIN_KEYFRAME_INTERVAL = 100; // 0.1秒
+
+// 論理角の範囲（全サーボ共通、必要に応じてservo_daemonから取得）
+export const LOGICAL_ANGLE_MIN = -90;
+export const LOGICAL_ANGLE_MAX = 90;
