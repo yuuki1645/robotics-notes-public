@@ -58,7 +58,7 @@ class ServoKinematicsBase:
 # ----------------------------
 # 論理角レンジ・物理角レンジ
 # ----------------------------
-LOGICAL_RANGE_HEEL = (-30.0,  90.0)
+LOGICAL_RANGE_HEEL = (-50.0,  90.0)
 LOGICAL_RANGE_KNEE = (  0.0, 120.0)
 LOGICAL_RANGE_HIP1 = (-30.0,  90.0)
 LOGICAL_RANGE_HIP2 = (-30.0, 120.0)
