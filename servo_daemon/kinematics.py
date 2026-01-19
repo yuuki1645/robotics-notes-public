@@ -91,7 +91,7 @@ class RHeelKinematics(ServoKinematicsBase):
         return l + 100.0
 
     def physical_to_logical(self, physical_deg: float) -> float:
-        return physical_deg - 90.0
+        return physical_deg - 100.0
 
 
 class RKneeKinematics(ServoKinematicsBase):
