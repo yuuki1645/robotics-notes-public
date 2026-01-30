@@ -16,11 +16,11 @@ export default function Timeline({
   onKeyframeDrag,
   selectedKeyframeIndex,
   selectedChannel,
-  onPlayheadDrag,  // 追加
+  onPlayheadDrag,
 }) {
   const timelineRef = useRef(null);
   const scrollableRef = useRef(null);
-  const [isPlayheadDragging, setIsPlayheadDragging] = useState(false);  // 追加
+  const [isPlayheadDragging, setIsPlayheadDragging] = useState(false);
   
   const { timeToX, xToTime, TIMELINE_WIDTH, DISPLAY_DURATION } = useTimelineCoordinates();
   const { isDragging, handleKeyframeStart, getClientX } = useTimelineDrag(
@@ -30,16 +30,15 @@ export default function Timeline({
   );
   
   const handleKeyframeClick = (index, channel) => {
-    if (!isDragging && !isPlayheadDragging) {  // プレイヘッドドラッグ中も除外
+    if (!isDragging && !isPlayheadDragging) {
       onKeyframeClick(index, channel);
     }
   };
   
   const handleRulerClick = (e) => {
-    if (isDragging || isPlayheadDragging) return;  // プレイヘッドドラッグ中も除外
-    
+    if (isDragging || isPlayheadDragging) return;
     if (e.target.closest('.timeline-marker')) return;
-    
+    if (e.target.closest('.timeline-ruler-playhead')) return;  // ルーラー用プレイヘッド上ではシークしない
     if (!scrollableRef.current) return;
     const rect = scrollableRef.current.getBoundingClientRect();
     const clientX = getClientX(e);
@@ -48,35 +47,31 @@ export default function Timeline({
     onTimeClick(time, null);
   };
   
-  // プレイヘッドドラッグハンドラ
   const handlePlayheadDrag = (time) => {
     setIsPlayheadDragging(true);
     onPlayheadDrag(time);
   };
   
-  // ドラッグ終了を検知するためのコールバック
   const handlePlayheadDragEnd = () => {
     setIsPlayheadDragging(false);
   };
   
-  // ドラッグ終了を検知（マウス/タッチイベントのクリーンアップ時に呼ばれる）
-  // これは少し工夫が必要。TimelineTrackから直接呼べないので、
-  // グローバルイベントリスナーで検知するか、別の方法を使う
-  // とりあえず、マウス/タッチイベントが終了したら自動的にfalseになるようにする
-  
   return (
     <div className="timeline-container" ref={timelineRef}>
-      {/* 左側：固定ラベルエリア */}
       <TimelineLabels keyframes={keyframes} currentTime={currentTime} />
-      
-      {/* 右側：スクロール可能なタイムラインエリア */}
       <div className="timeline-scrollable" ref={scrollableRef}>
-        {/* ヘッダー：時間ルーラー */}
         <div onClick={handleRulerClick} onTouchEnd={handleRulerClick}>
-          <TimelineRuler timeToX={timeToX} />
+          <TimelineRuler
+            timeToX={timeToX}
+            currentTime={currentTime}
+            xToTime={xToTime}
+            scrollableRef={scrollableRef}
+            getClientX={getClientX}
+            onPlayheadDrag={handlePlayheadDrag}
+            onPlayheadDragEnd={handlePlayheadDragEnd}
+            isPlayheadDragging={isPlayheadDragging}
+          />
         </div>
-        
-        {/* トラック：キーフレーム */}
         <div className="timeline-tracks">
           {SERVO_CHANNELS.map(channel => (
             <TimelineTrack
@@ -96,11 +91,75 @@ export default function Timeline({
               getClientX={getClientX}
               scrollableRef={scrollableRef}
               isDragging={isDragging}
-              onPlayheadDrag={handlePlayheadDrag}
-              onPlayheadDragEnd={handlePlayheadDragEnd}
               isPlayheadDragging={isPlayheadDragging}
             />
           ))}
+        </div>
+        {/* 下側のドラッグ用ハンドル（L_HEELの下） */}
+        <div className="timeline-playhead-handle-container">
+          <div
+            className={`timeline-playhead-handle ${isPlayheadDragging ? 'dragging' : ''}`}
+            style={{ left: `${timeToX(currentTime)}px` }}
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              if (!scrollableRef.current) return;
+              const rect = scrollableRef.current.getBoundingClientRect();
+              
+              const handleMove = (e) => {
+                e.preventDefault();
+                const clientX = getClientX(e);
+                const x = clientX - rect.left;
+                // 指の真下にハンドル中央が来るようにする
+                const HANDLE_CENTER_OFFSET_PX = 20; // ハンドル幅の半分（40px / 2）
+                const playheadLeft = x - HANDLE_CENTER_OFFSET_PX;
+                const newTime = xToTime(Math.max(0, playheadLeft));
+                handlePlayheadDrag(newTime);
+              };
+              
+              const handleEnd = () => {
+                document.removeEventListener('mousemove', handleMove);
+                document.removeEventListener('mouseup', handleEnd);
+                document.removeEventListener('touchmove', handleMove);
+                document.removeEventListener('touchend', handleEnd);
+                handlePlayheadDragEnd();
+              };
+              
+              document.addEventListener('mousemove', handleMove);
+              document.addEventListener('mouseup', handleEnd);
+              document.addEventListener('touchmove', handleMove, { passive: false });
+              document.addEventListener('touchend', handleEnd);
+            }}
+            onTouchStart={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              if (!scrollableRef.current) return;
+              const rect = scrollableRef.current.getBoundingClientRect();
+              
+              const handleMove = (e) => {
+                e.preventDefault();
+                const clientX = getClientX(e);
+                const x = clientX - rect.left;
+                const HANDLE_CENTER_OFFSET_PX = 20; // ハンドル幅の半分
+                const playheadLeft = x - HANDLE_CENTER_OFFSET_PX;
+                const newTime = xToTime(Math.max(0, playheadLeft));
+                handlePlayheadDrag(newTime);
+              };
+              
+              const handleEnd = () => {
+                document.removeEventListener('mousemove', handleMove);
+                document.removeEventListener('mouseup', handleEnd);
+                document.removeEventListener('touchmove', handleMove);
+                document.removeEventListener('touchend', handleEnd);
+                handlePlayheadDragEnd();
+              };
+              
+              document.addEventListener('mousemove', handleMove);
+              document.addEventListener('mouseup', handleEnd);
+              document.addEventListener('touchmove', handleMove, { passive: false });
+              document.addEventListener('touchend', handleEnd);
+            }}
+          />
         </div>
       </div>
     </div>

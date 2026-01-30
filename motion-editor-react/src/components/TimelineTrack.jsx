@@ -15,21 +15,17 @@ export default function TimelineTrack({
   xToTime,
   scrollableRef,
   isDragging,
-  onPlayheadDrag,  // 追加
-  onPlayheadDragEnd,  // 追加
-  isPlayheadDragging,  // 追加
+  isPlayheadDragging,
 }) {
   const handleTrackClick = (e) => {
-    if (isDragging || isPlayheadDragging) return;  // プレイヘッドドラッグ中も除外
-    
+    if (isDragging || isPlayheadDragging) return;
     if (
       e.target.closest('.timeline-keyframe') ||
       e.target.closest('.timeline-track-label') ||
-      e.target.closest('.timeline-playhead')  // プレイヘッドクリックも除外
+      e.target.closest('.timeline-playhead')
     ) {
       return;
     }
-    
     const trackContent = e.target.closest('.timeline-track-content');
     if (trackContent) {
       if (!scrollableRef.current) return;
@@ -39,42 +35,6 @@ export default function TimelineTrack({
       const time = xToTime(x);
       onTimeClick(time, channel);
     }
-  };
-  
-  // プレイヘッドのドラッグ開始
-  const handlePlayheadMouseDown = (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    if (!scrollableRef.current) return;
-    
-    const rect = scrollableRef.current.getBoundingClientRect();
-    
-    const handleMove = (e) => {
-      e.preventDefault();
-      const clientX = getClientX(e);
-      const x = clientX - rect.left;
-      const newTime = xToTime(x);
-      onPlayheadDrag(newTime);
-    };
-    
-    const handleEnd = () => {
-      document.removeEventListener('mousemove', handleMove);
-      document.removeEventListener('mouseup', handleEnd);
-      document.removeEventListener('touchmove', handleMove);
-      document.removeEventListener('touchend', handleEnd);
-      onPlayheadDragEnd();  // 追加: ドラッグ終了時に状態をリセット
-    };
-    
-    document.addEventListener('mousemove', handleMove);
-    document.addEventListener('mouseup', handleEnd);
-    document.addEventListener('touchmove', handleMove, { passive: false });
-    document.addEventListener('touchend', handleEnd);
-    
-    // 最初の位置でも更新
-    const startX = getClientX(e);
-    const x = startX - rect.left;
-    const startTime = xToTime(x);
-    onPlayheadDrag(startTime);
   };
   
   return (
@@ -89,25 +49,18 @@ export default function TimelineTrack({
         onClick={handleTrackClick}
         onTouchEnd={handleTrackClick}
       >
-        {/* 再生位置インジケーター */}
+        {/* 再生位置インジケーター（表示専用・ドラッグはルーラーで行う） */}
         <div 
           className={`timeline-playhead ${isPlayheadDragging ? 'dragging' : ''}`}
           style={{ left: `${timeToX(currentTime)}px` }}
-          onMouseDown={handlePlayheadMouseDown}
-          onTouchStart={handlePlayheadMouseDown}
         />
-        
-        {/* キーフレーム */}
         {keyframes.map((keyframe, index) => {
-          // このチャンネルにキーフレームが存在するかチェック
           if (keyframe.angles[channel] === undefined) {
             return null;
           }
-          
           const x = timeToX(keyframe.time);
           const isSelected = selectedKeyframeIndex === index && selectedChannel === channel;
           const angle = keyframe.angles[channel] ?? 90;
-          
           return (
             <TimelineKeyframe
               key={`${channel}-${index}`}
