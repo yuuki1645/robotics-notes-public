@@ -1,25 +1,22 @@
+import { useTimelineContext } from '../contexts/TimelineContext';
 import TimelineKeyframe from './TimelineKeyframe';
 import './Timeline.css';
 
-export default function TimelineTrack({
-  channel,
-  keyframes,
-  currentTime,
-  selectedKeyframeIndex,
-  selectedChannel,
-  timeToX,
-  onTimeClick,
-  onKeyframeClick,
-  onKeyframeStartDrag,
-  getClientX,
-  xToTime,
-  scrollableRef,
-  isDragging,
-  isPlayheadDragging,
-}) {
-  // console.log("keyframes", keyframes);
-  console.log("TimelineTrack rendered");
-  console.log(`selectedKeyframeIndex=${selectedKeyframeIndex}, selectedChannel=${selectedChannel}`);
+export default function TimelineTrack({ channel }) {
+  const {
+    keyframes,
+    currentTime,
+    timeToX,
+    xToTime,
+    scrollableRef,
+    getClientX,
+    isDragging,
+    isPlayheadDragging,
+    selectedKeyframeIndex,
+    selectedChannel,
+    onTimeClick,
+    onKeyframeClick,
+  } = useTimelineContext();
 
   const handleTrackClick = (e) => {
     if (isDragging || isPlayheadDragging) return;
@@ -70,8 +67,6 @@ export default function TimelineTrack({
               x={x}
               isSelected={isSelected}
               angle={kf.angle ?? 90}
-              onClick={onKeyframeClick}
-              onStartDrag={onKeyframeStartDrag}
             />
           );
         })}
