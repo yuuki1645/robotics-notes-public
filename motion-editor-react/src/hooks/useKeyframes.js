@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { MAX_MOTION_DURATION, MIN_KEYFRAME_INTERVAL } from '../constants';
 import { getAngleAtTime } from '../utils/interpolation';
+import { generateKeyframeId } from '../utils/motionStorage';
 
 export function useKeyframes(motion, updateMotion) {
   const sortedKeyframes = [...(motion?.keyframes || [])].sort(
@@ -40,32 +41,41 @@ export function useKeyframes(motion, updateMotion) {
 
     const clampedTime = Math.max(0, Math.min(MAX_MOTION_DURATION, time));
     const angle = getAngleAtTimeForChannel(clampedTime, channel, sortedKeyframes);
-    const newKeyframe = { time: clampedTime, channel, angle };
+    const newKeyframe = {
+      id: generateKeyframeId(),
+      time: clampedTime,
+      channel,
+      angle,
+    };
     const newKeyframes = [...sortedKeyframes, newKeyframe].sort(
       (a, b) => a.time - b.time || a.channel - b.channel
     );
     updateMotion(motion.id, { keyframes: newKeyframes });
   }, [motion, sortedKeyframes, updateMotion, getAngleAtTimeForChannel]);
 
-  const deleteKeyframe = useCallback((index) => {
+  const deleteKeyframe = useCallback((id) => {
     if (!motion || sortedKeyframes.length <= 1) return;
-    const newKeyframes = sortedKeyframes.filter((_, i) => i !== index);
+    const newKeyframes = sortedKeyframes.filter((kf) => kf.id !== id);
     updateMotion(motion.id, { keyframes: newKeyframes });
   }, [motion, sortedKeyframes, updateMotion]);
 
-  const updateKeyframeTime = useCallback((index, newTime) => {
+  const updateKeyframeTime = useCallback((id, newTime) => {
     if (!motion) return;
 
     const clampedTime = Math.max(0, Math.min(MAX_MOTION_DURATION, newTime));
+    const index = sortedKeyframes.findIndex((kf) => kf.id === id);
+    if (index < 0) return;
 
     const newKeyframes = [...sortedKeyframes];
     newKeyframes[index] = { ...newKeyframes[index], time: clampedTime };
     newKeyframes.sort((a, b) => a.time - b.time || a.channel - b.channel);
     updateMotion(motion.id, { keyframes: newKeyframes });
-  }, [motion, sortedKeyframes, updateMotion, findNonOverlappingTime]);
+  }, [motion, sortedKeyframes, updateMotion]);
 
-  const updateKeyframeAngle = useCallback((index, angle) => {
+  const updateKeyframeAngle = useCallback((id, angle) => {
     if (!motion) return;
+    const index = sortedKeyframes.findIndex((kf) => kf.id === id);
+    if (index < 0) return;
     const newKeyframes = [...sortedKeyframes];
     newKeyframes[index] = { ...newKeyframes[index], angle };
     updateMotion(motion.id, { keyframes: newKeyframes });

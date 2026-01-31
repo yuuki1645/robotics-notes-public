@@ -67,14 +67,36 @@ const INITIAL_ANGLES = {
 };
 
 /**
- * 新しいモーションを作成（キーフレームは ch ごとに 1 個ずつ）
+ * キーフレーム用の一意な id を生成
+ */
+export function generateKeyframeId() {
+  return `kf-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+}
+
+/**
+ * 既存のモーションにキーフレーム id が無い場合に付与（マイグレーション用）
+ */
+export function ensureKeyframeIds(motions) {
+  if (!Array.isArray(motions)) return motions;
+  return motions.map((m) => {
+    if (!m.keyframes || !m.keyframes.length) return m;
+    const keyframes = m.keyframes.map((kf) =>
+      kf.id ? kf : { ...kf, id: generateKeyframeId() }
+    );
+    return { ...m, keyframes };
+  });
+}
+
+/**
+ * 新しいモーションを作成（キーフレームは ch ごとに 1 個ずつ、各キーフレームに id 付与）
  */
 export function createMotion(name = '新規モーション') {
   return {
     id: `motion-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     name: name,
     duration: DEFAULT_MOTION_DURATION,
-    keyframes: SERVO_CHANNELS.map(ch => ({
+    keyframes: SERVO_CHANNELS.map((ch) => ({
+      id: generateKeyframeId(),
       time: 0,
       channel: ch,
       angle: INITIAL_ANGLES[ch] ?? 90,

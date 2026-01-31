@@ -5,7 +5,7 @@ import './ServoAngleEditor.css';
 
 export default function ServoAngleEditor({
   keyframe,
-  keyframeIndex,
+  keyframeId,
   channel,
   servo,
   onUpdateAngle,
@@ -61,7 +61,7 @@ export default function ServoAngleEditor({
     const newAngle = parseFloat(value);
     const clampedAngle = Math.max(range.min, Math.min(range.max, newAngle));
     setAngle(clampedAngle);
-    onUpdateAngle(keyframeIndex, clampedAngle);
+    onUpdateAngle(keyframeId, clampedAngle);
   };
 
   return (
@@ -69,7 +69,6 @@ export default function ServoAngleEditor({
       <div className="servo-angle-editor-header">
         <h3>{servoName}</h3>
         <div className="servo-angle-editor-info">
-          <span>キーフレーム #{keyframeIndex + 1}</span>
           <span>時間: {(keyframe.time / 1000).toFixed(2)}s</span>
           {servo && (
             <span className="servo-range-info">
@@ -79,7 +78,7 @@ export default function ServoAngleEditor({
           <button
             onClick={() => {
               if (confirm('このキーフレームを削除しますか？')) {
-                onDelete(keyframeIndex);
+                onDelete(keyframeId);
               }
             }}
             className="btn-delete-keyframe"

@@ -57,8 +57,7 @@ function App() {
 
   const { servos, loading: servosLoading } = useServos();
 
-  const [selectedKeyframeIndex, setSelectedKeyframeIndex] = useState(null);
-  const [selectedChannel, setSelectedChannel] = useState(null);
+  const [selectedKeyframeId, setSelectedKeyframeId] = useState(null);
 
   const handleMoveToInitialPosition = async (motion) => {
     if (!motion || !motion.keyframes || motion.keyframes.length === 0) {
@@ -85,10 +84,10 @@ function App() {
     }
   };
 
-  if (currentMotion && selectedKeyframeIndex !== null) {
-    if (selectedKeyframeIndex >= keyframes.length) {
-      setSelectedKeyframeIndex(null);
-      setSelectedChannel(null);
+  if (currentMotion && selectedKeyframeId !== null) {
+    const exists = keyframes.some((kf) => kf.id === selectedKeyframeId);
+    if (!exists) {
+      setSelectedKeyframeId(null);
     }
   }
 
@@ -98,32 +97,30 @@ function App() {
     }
   };
 
-  const handleKeyframeClick = (index, channel) => {
-    setSelectedKeyframeIndex(index);
-    setSelectedChannel(channel);
+  const handleKeyframeClick = (id) => {
+    setSelectedKeyframeId(id);
   };
 
-  const handleKeyframeDrag = (index, newTime) => {
-    console.log(`handleKeyframeDrag: index=${index}, newTime=${newTime}`);
-    updateKeyframeTime(index, newTime);
+  const handleKeyframeDrag = (id, newTime) => {
+    updateKeyframeTime(id, newTime);
   };
 
-  const handleAngleUpdate = (keyframeIndex, angle) => {
-    updateKeyframeAngle(keyframeIndex, angle);
+  const handleAngleUpdate = (keyframeId, angle) => {
+    updateKeyframeAngle(keyframeId, angle);
   };
 
-  const handleKeyframeDelete = (index) => {
-    deleteKeyframe(index);
-    setSelectedKeyframeIndex(null);
-    setSelectedChannel(null);
+  const handleKeyframeDelete = (keyframeId) => {
+    deleteKeyframe(keyframeId);
+    setSelectedKeyframeId(null);
   };
 
-  const selectedKeyframe = selectedKeyframeIndex !== null
-    ? keyframes[selectedKeyframeIndex]
+  const selectedKeyframe = selectedKeyframeId !== null
+    ? keyframes.find((kf) => kf.id === selectedKeyframeId) ?? null
     : null;
 
+  const selectedChannel = selectedKeyframe?.channel ?? null;
   const selectedServo = selectedChannel !== null
-    ? servos.find(s => s.ch === selectedChannel)
+    ? servos.find((s) => s.ch === selectedChannel)
     : null;
 
   if (!isInitialized) {
@@ -163,8 +160,7 @@ function App() {
             onTimeClick={handleTimeClick}
             onKeyframeClick={handleKeyframeClick}
             onKeyframeDrag={handleKeyframeDrag}
-            selectedKeyframeIndex={selectedKeyframeIndex}
-            selectedChannel={selectedChannel}
+            selectedKeyframeId={selectedKeyframeId}
             onPlayheadDrag={handlePlayheadDrag}
           />
 
@@ -185,7 +181,7 @@ function App() {
 
         <ServoAngleEditor
           keyframe={selectedKeyframe}
-          keyframeIndex={selectedKeyframeIndex}
+          keyframeId={selectedKeyframeId}
           channel={selectedChannel}
           servo={selectedServo}
           onUpdateAngle={handleAngleUpdate}

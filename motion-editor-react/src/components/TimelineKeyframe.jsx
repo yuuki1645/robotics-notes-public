@@ -4,7 +4,7 @@ import './Timeline.css';
 
 export default function TimelineKeyframe({
   keyframe,
-  keyframeIndex,
+  keyframeId,
   channel,
   x,
   isSelected,
@@ -18,7 +18,7 @@ export default function TimelineKeyframe({
     if (!el) return;
 
     const handleTouchStart = (e) => {
-      onKeyframeStartDrag(e, keyframeIndex, channel);
+      onKeyframeStartDrag(e, keyframeId, channel);
     };
 
     el.addEventListener('touchstart', handleTouchStart, { passive: false });
@@ -26,11 +26,11 @@ export default function TimelineKeyframe({
     return () => {
       el.removeEventListener('touchstart', handleTouchStart);
     };
-  }, [onKeyframeStartDrag, keyframeIndex, channel]);
+  }, [onKeyframeStartDrag, keyframeId, channel]);
 
   const handleClick = (e) => {
     e.stopPropagation();
-    onKeyframeClick(keyframeIndex, channel);
+    onKeyframeClick(keyframeId);
   };
 
   return (
@@ -40,7 +40,7 @@ export default function TimelineKeyframe({
       style={{ left: `${x}px` }}
       onClick={handleClick}
       onTouchEnd={handleClick}
-      onMouseDown={(e) => onKeyframeStartDrag(e, keyframeIndex, channel)}
+      onMouseDown={(e) => onKeyframeStartDrag(e, keyframeId, channel)}
       title={`時間: ${(keyframe.time / 1000).toFixed(2)}s, 角度: ${angle.toFixed(1)}°`}
     >
       <div className="timeline-keyframe-handle" />

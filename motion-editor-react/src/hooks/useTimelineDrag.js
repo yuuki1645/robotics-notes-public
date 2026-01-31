@@ -7,6 +7,9 @@ export function useTimelineDrag(scrollableRef, keyframes, onKeyframeDrag) {
   const dragStateRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
 
+  const onKeyframeDragRef = useRef(onKeyframeDrag);
+  onKeyframeDragRef.current = onKeyframeDrag;
+
   const getClientX = (e) => {
     if (e.touches && e.touches.length > 0) {
       return e.touches[0].clientX;
@@ -17,18 +20,21 @@ export function useTimelineDrag(scrollableRef, keyframes, onKeyframeDrag) {
     return e.clientX;
   };
 
-  const handleKeyframeStart = (e, keyframeIndex, channel, timeToX, xToTime, timelineWidth, displayDuration) => {
+  const handleKeyframeStart = (e, keyframeId, channel, timeToX, xToTime, timelineWidth, displayDuration) => {
     e.stopPropagation();
     e.preventDefault();
 
     if (!scrollableRef.current) return;
+    const kf = keyframes.find((k) => k.id === keyframeId);
+    if (!kf) return;
+
     const rect = scrollableRef.current.getBoundingClientRect();
     const clientX = getClientX(e);
     const startX = clientX - rect.left;
-    const startTime = keyframes[keyframeIndex].time;
+    const startTime = kf.time;
 
     dragStateRef.current = {
-      keyframeIndex,
+      keyframeId,
       channel,
       startX,
       startTime,
@@ -58,7 +64,7 @@ export function useTimelineDrag(scrollableRef, keyframes, onKeyframeDrag) {
       const deltaTime = (deltaX / timelineWidth) * displayDuration;
       const newTime = Math.max(0, Math.min(MAX_MOTION_DURATION, dragStateRef.current.startTime + deltaTime));
 
-      onKeyframeDrag(dragStateRef.current.keyframeIndex, newTime);
+      onKeyframeDragRef.current(dragStateRef.current.keyframeId, newTime);
     };
 
     const handleEnd = () => {

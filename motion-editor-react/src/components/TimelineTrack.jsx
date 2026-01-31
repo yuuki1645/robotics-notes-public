@@ -12,8 +12,7 @@ export default function TimelineTrack({ channel }) {
     getClientX,
     isDragging,
     isPlayheadDragging,
-    selectedKeyframeIndex,
-    selectedChannel,
+    selectedKeyframeId,
     onTimeClick,
     onKeyframeClick,
   } = useTimelineContext();
@@ -54,15 +53,15 @@ export default function TimelineTrack({ channel }) {
           className={`timeline-playhead ${isPlayheadDragging ? 'dragging' : ''}`}
           style={{ left: `${timeToX(currentTime)}px` }}
         />
-        {keyframes.map((kf, index) => {
+        {keyframes.map((kf) => {
           if (kf.channel !== channel) return null;
           const x = timeToX(kf.time);
-          const isSelected = selectedKeyframeIndex === index && selectedChannel === channel;
+          const isSelected = selectedKeyframeId === kf.id;
           return (
             <TimelineKeyframe
-              key={`${channel}-${index}`}
+              key={kf.id}
               keyframe={kf}
-              keyframeIndex={index}
+              keyframeId={kf.id}
               channel={channel}
               x={x}
               isSelected={isSelected}

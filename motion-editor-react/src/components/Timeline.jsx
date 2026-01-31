@@ -14,8 +14,7 @@ export default function Timeline({
   onTimeClick,
   onKeyframeClick,
   onKeyframeDrag,
-  selectedKeyframeIndex,
-  selectedChannel,
+  selectedKeyframeId,
   onPlayheadDrag,
 }) {
   const timelineRef = useRef(null);
@@ -30,9 +29,9 @@ export default function Timeline({
   );
 
   const handleKeyframeClick = useCallback(
-    (index, channel) => {
+    (id) => {
       if (!isDragging && !isPlayheadDragging) {
-        onKeyframeClick(index, channel);
+        onKeyframeClick(id);
       }
     },
     [isDragging, isPlayheadDragging, onKeyframeClick]
@@ -51,8 +50,8 @@ export default function Timeline({
   }, []);
 
   const onKeyframeStartDrag = useCallback(
-    (e, index, ch) => {
-      handleKeyframeStart(e, index, ch, timeToX, xToTime, TIMELINE_WIDTH, DISPLAY_DURATION);
+    (e, id, ch) => {
+      handleKeyframeStart(e, id, ch, timeToX, xToTime, TIMELINE_WIDTH, DISPLAY_DURATION);
     },
     [handleKeyframeStart, timeToX, xToTime, TIMELINE_WIDTH, DISPLAY_DURATION]
   );
@@ -69,8 +68,7 @@ export default function Timeline({
       getClientX,
       isDragging,
       isPlayheadDragging,
-      selectedKeyframeIndex,
-      selectedChannel,
+      selectedKeyframeId,
       onTimeClick,
       onKeyframeClick: handleKeyframeClick,
       onKeyframeStartDrag,
@@ -88,8 +86,7 @@ export default function Timeline({
       getClientX,
       isDragging,
       isPlayheadDragging,
-      selectedKeyframeIndex,
-      selectedChannel,
+      selectedKeyframeId,
       onTimeClick,
       handleKeyframeClick,
       onKeyframeStartDrag,

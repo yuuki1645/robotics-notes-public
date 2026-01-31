@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { loadMotions, saveMotions, createMotion, loadCurrentMotionId, saveCurrentMotionId } from '../utils/motionStorage';
+import { loadMotions, saveMotions, createMotion, loadCurrentMotionId, saveCurrentMotionId, ensureKeyframeIds } from '../utils/motionStorage';
 
 export function useMotion() {
   const [motions, setMotions] = useState([]);
@@ -13,7 +13,7 @@ export function useMotion() {
     const savedMotionId = loadCurrentMotionId();
     
     if (loaded.length > 0) {
-      setMotions(loaded);
+      setMotions(ensureKeyframeIds(loaded));
       // 前回選択していたモーションが存在すれば復元、なければ先頭
       const validId = savedMotionId && loaded.some(m => m.id === savedMotionId)
         ? savedMotionId
