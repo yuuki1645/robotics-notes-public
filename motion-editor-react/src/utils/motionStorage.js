@@ -4,29 +4,7 @@ const STORAGE_KEY = 'motion-editor-motions';
 const CURRENT_MOTION_ID_KEY = 'motion-editor-current-motion-id';
 
 /**
- * 旧形式キーフレーム { time, angles } を新形式 { time, channel, angle } に変換
- */
-function migrateKeyframes(keyframes) {
-  if (!keyframes || keyframes.length === 0) return [];
-  const first = keyframes[0];
-  if (first.angles !== undefined) {
-    const result = [];
-    keyframes.forEach(kf => {
-      if (kf.angles && typeof kf.angles === 'object') {
-        Object.entries(kf.angles).forEach(([ch, angle]) => {
-          if (angle !== undefined && angle !== null) {
-            result.push({ time: kf.time, channel: parseInt(ch, 10), angle });
-          }
-        });
-      }
-    });
-    return result.sort((a, b) => a.time - b.time || a.channel - b.channel);
-  }
-  return keyframes;
-}
-
-/**
- * ローカルストレージからモーション一覧を読み込む（旧形式は新形式に変換）
+ * ローカルストレージからモーション一覧を読み込む
  */
 export function loadMotions() {
   try {
@@ -34,11 +12,7 @@ export function loadMotions() {
     if (!stored) {
       return [];
     }
-    const loaded = JSON.parse(stored);
-    return loaded.map(m => ({
-      ...m,
-      keyframes: migrateKeyframes(m.keyframes || []),
-    }));
+    return JSON.parse(stored);
   } catch (error) {
     console.error('Failed to load motions:', error);
     return [];
