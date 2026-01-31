@@ -9,7 +9,8 @@ export default function ServoAngleEditor({
   channel,
   servo,
   onUpdateAngle,
-  onDelete
+  onDelete,
+  endKeyframeDragRef,
 }) {
   const [angle, setAngle] = useState(90);
 
@@ -20,6 +21,10 @@ export default function ServoAngleEditor({
       setAngle(90);
     }
   }, [keyframe, channel]);
+
+  const handlePointerDown = () => {
+    endKeyframeDragRef?.current?.();
+  };
 
   if (!keyframe || channel === null) {
     return (
@@ -65,7 +70,11 @@ export default function ServoAngleEditor({
   };
 
   return (
-    <div className="servo-angle-editor">
+    <div
+      className="servo-angle-editor"
+      onMouseDown={handlePointerDown}
+      onTouchStart={handlePointerDown}
+    >
       <div className="servo-angle-editor-header">
         <h3>{servoName}</h3>
         <div className="servo-angle-editor-info">

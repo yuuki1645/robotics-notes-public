@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useMotion } from './hooks/useMotion';
 import { useKeyframes } from './hooks/useKeyframes';
 import { useInterpolation } from './hooks/useInterpolation';
@@ -58,6 +58,8 @@ function App() {
   const { servos, loading: servosLoading } = useServos();
 
   const [selectedKeyframeId, setSelectedKeyframeId] = useState(null);
+
+  const endKeyframeDragRef = useRef(null);
 
   const handleMoveToInitialPosition = async (motion) => {
     if (!motion || !motion.keyframes || motion.keyframes.length === 0) {
@@ -162,6 +164,7 @@ function App() {
             onKeyframeDrag={handleKeyframeDrag}
             selectedKeyframeId={selectedKeyframeId}
             onPlayheadDrag={handlePlayheadDrag}
+            endKeyframeDragRef={endKeyframeDragRef}
           />
 
           <PlaybackControls
@@ -186,6 +189,7 @@ function App() {
           servo={selectedServo}
           onUpdateAngle={handleAngleUpdate}
           onDelete={handleKeyframeDelete}
+          endKeyframeDragRef={endKeyframeDragRef}
         />
       </div>
     </div>

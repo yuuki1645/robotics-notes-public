@@ -3,12 +3,18 @@ import { MAX_MOTION_DURATION } from '../constants';
 
 const DRAG_THRESHOLD_PX = 5;
 
-export function useTimelineDrag(scrollableRef, keyframes, onKeyframeDrag) {
+export function useTimelineDrag(scrollableRef, keyframes, onKeyframeDrag, onKeyframeClick) {
   const dragStateRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
+  const dragEndedRef = useRef(false);
 
   const onKeyframeDragRef = useRef(onKeyframeDrag);
   onKeyframeDragRef.current = onKeyframeDrag;
+
+  const onKeyframeClickRef = useRef(onKeyframeClick);
+  onKeyframeClickRef.current = onKeyframeClick;
+
+  const listenersRef = useRef(null);
 
   const getClientX = (e) => {
     if (e.touches && e.touches.length > 0) {
@@ -20,9 +26,27 @@ export function useTimelineDrag(scrollableRef, keyframes, onKeyframeDrag) {
     return e.clientX;
   };
 
+  const removeListeners = (handleMove, handleEnd) => {
+    if (!handleMove || !handleEnd) return;
+    document.removeEventListener('mousemove', handleMove);
+    document.removeEventListener('mouseup', handleEnd);
+    document.removeEventListener('touchmove', handleMove);
+    document.removeEventListener('touchend', handleEnd);
+    document.removeEventListener('touchcancel', handleEnd);
+    listenersRef.current = null;
+  };
+
   const handleKeyframeStart = (e, keyframeId, channel, timeToX, xToTime, timelineWidth, displayDuration) => {
     e.stopPropagation();
     e.preventDefault();
+
+    // 前回のドラッグで mouseup が document に届かずリスナーが残っている場合の対策
+    if (listenersRef.current) {
+      const { handleMove: oldMove, handleEnd: oldEnd } = listenersRef.current;
+      removeListeners(oldMove, oldEnd);
+      dragStateRef.current = null;
+      setIsDragging(false);
+    }
 
     if (!scrollableRef.current) return;
     const kf = keyframes.find((k) => k.id === keyframeId);
@@ -68,23 +92,50 @@ export function useTimelineDrag(scrollableRef, keyframes, onKeyframeDrag) {
     };
 
     const handleEnd = () => {
+      const keyframeId = dragStateRef.current?.keyframeId;
+      const committed = dragStateRef.current?.dragCommitted;
+
       dragStateRef.current = null;
       setIsDragging(false);
-      document.removeEventListener('mousemove', handleMove);
-      document.removeEventListener('mouseup', handleEnd);
-      document.removeEventListener('touchmove', handleMove);
-      document.removeEventListener('touchend', handleEnd);
+      removeListeners(handleMove, handleEnd);
+
+      if (committed) {
+        dragEndedRef.current = true;
+        setTimeout(() => {
+          dragEndedRef.current = false;
+        }, 0);
+      }
+
+      if (!committed && keyframeId != null) {
+        const idToSelect = keyframeId;
+        setTimeout(() => {
+          onKeyframeClickRef.current?.(idToSelect);
+        }, 0);
+      }
     };
+
+    listenersRef.current = { handleMove, handleEnd };
 
     document.addEventListener('mousemove', handleMove);
     document.addEventListener('mouseup', handleEnd);
     document.addEventListener('touchmove', handleMove, { passive: false });
     document.addEventListener('touchend', handleEnd);
+    document.addEventListener('touchcancel', handleEnd);
+  };
+
+  const endKeyframeDrag = () => {
+    if (!listenersRef.current) return;
+    const { handleMove, handleEnd } = listenersRef.current;
+    dragStateRef.current = null;
+    setIsDragging(false);
+    removeListeners(handleMove, handleEnd);
   };
 
   return {
     isDragging,
     handleKeyframeStart,
     getClientX,
+    endKeyframeDrag,
+    dragEndedRef,
   };
 }

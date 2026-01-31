@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo, useCallback } from 'react';
+import { useRef, useState, useMemo, useCallback, useEffect } from 'react';
 import { SERVO_CHANNELS } from '../constants';
 import { useTimelineCoordinates } from '../hooks/useTimelineCoordinates';
 import { useTimelineDrag } from '../hooks/useTimelineDrag';
@@ -16,21 +16,36 @@ export default function Timeline({
   onKeyframeDrag,
   selectedKeyframeId,
   onPlayheadDrag,
+  endKeyframeDragRef,
 }) {
   const timelineRef = useRef(null);
   const scrollableRef = useRef(null);
   const [isPlayheadDragging, setIsPlayheadDragging] = useState(false);
 
   const { timeToX, xToTime, TIMELINE_WIDTH, DISPLAY_DURATION } = useTimelineCoordinates();
-  const { isDragging, handleKeyframeStart, getClientX } = useTimelineDrag(
+  const { isDragging, handleKeyframeStart, getClientX, endKeyframeDrag, dragEndedRef } = useTimelineDrag(
     scrollableRef,
     keyframes,
-    onKeyframeDrag
+    onKeyframeDrag,
+    onKeyframeClick
   );
+
+  useEffect(() => {
+    if (endKeyframeDragRef) {
+      endKeyframeDragRef.current = endKeyframeDrag;
+      return () => {
+        endKeyframeDragRef.current = null;
+      };
+    }
+  }, [endKeyframeDragRef, endKeyframeDrag]);
 
   const handleKeyframeClick = useCallback(
     (id) => {
-      if (!isDragging && !isPlayheadDragging) {
+      const allowByDragEnded = dragEndedRef.current;
+      if (allowByDragEnded) {
+        dragEndedRef.current = false;
+      }
+      if ((!isDragging && !isPlayheadDragging) || allowByDragEnded) {
         onKeyframeClick(id);
       }
     },
@@ -113,6 +128,7 @@ export default function Timeline({
               className={`timeline-playhead-handle ${isPlayheadDragging ? 'dragging' : ''}`}
               style={{ left: `${timeToX(currentTime)}px` }}
               onMouseDown={(e) => {
+                endKeyframeDrag();
                 e.stopPropagation();
                 e.preventDefault();
                 if (!scrollableRef.current) return;
@@ -133,6 +149,7 @@ export default function Timeline({
                   document.removeEventListener('mouseup', handleEnd);
                   document.removeEventListener('touchmove', handleMove);
                   document.removeEventListener('touchend', handleEnd);
+                  document.removeEventListener('touchcancel', handleEnd);
                   handlePlayheadDragEnd();
                 };
 
@@ -140,8 +157,10 @@ export default function Timeline({
                 document.addEventListener('mouseup', handleEnd);
                 document.addEventListener('touchmove', handleMove, { passive: false });
                 document.addEventListener('touchend', handleEnd);
+                document.addEventListener('touchcancel', handleEnd);
               }}
               onTouchStart={(e) => {
+                endKeyframeDrag();
                 e.stopPropagation();
                 e.preventDefault();
                 if (!scrollableRef.current) return;
@@ -162,6 +181,7 @@ export default function Timeline({
                   document.removeEventListener('mouseup', handleEnd);
                   document.removeEventListener('touchmove', handleMove);
                   document.removeEventListener('touchend', handleEnd);
+                  document.removeEventListener('touchcancel', handleEnd);
                   handlePlayheadDragEnd();
                 };
 
@@ -169,6 +189,7 @@ export default function Timeline({
                 document.addEventListener('mouseup', handleEnd);
                 document.addEventListener('touchmove', handleMove, { passive: false });
                 document.addEventListener('touchend', handleEnd);
+                document.addEventListener('touchcancel', handleEnd);
               }}
             />
           </div>
