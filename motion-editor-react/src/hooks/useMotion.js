@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { loadMotions, saveMotions, createMotion } from '../utils/motionStorage';
+import { loadMotions, saveMotions, createMotion, loadCurrentMotionId, saveCurrentMotionId } from '../utils/motionStorage';
 
 export function useMotion() {
   const [motions, setMotions] = useState([]);
@@ -10,12 +10,16 @@ export function useMotion() {
   // 初期化：ローカルストレージから読み込み
   useEffect(() => {
     const loaded = loadMotions();
+    const savedMotionId = loadCurrentMotionId();
     
     if (loaded.length > 0) {
       setMotions(loaded);
-      setCurrentMotionId(loaded[0].id);
+      // 前回選択していたモーションが存在すれば復元、なければ先頭
+      const validId = savedMotionId && loaded.some(m => m.id === savedMotionId)
+        ? savedMotionId
+        : loaded[0].id;
+      setCurrentMotionId(validId);
     } else {
-      // モーションがない場合はデフォルトを作成
       const defaultMotion = createMotion('デフォルトモーション');
       setMotions([defaultMotion]);
       setCurrentMotionId(defaultMotion.id);
@@ -25,17 +29,22 @@ export function useMotion() {
     isInitialLoadRef.current = false;
   }, []);
   
-  // モーション変更時に保存（初期読み込み時は除外）
+  // モーション一覧変更時に保存
   useEffect(() => {
     if (isInitialized && !isInitialLoadRef.current && motions.length > 0) {
       saveMotions(motions);
     }
   }, [motions, isInitialized]);
   
-  // 現在のモーションを取得
+  // 選択中のモーション変更時に保存（再読込時に復元するため）
+  useEffect(() => {
+    if (isInitialized && !isInitialLoadRef.current && currentMotionId) {
+      saveCurrentMotionId(currentMotionId);
+    }
+  }, [isInitialized, currentMotionId]);
+  
   const currentMotion = motions.find(m => m.id === currentMotionId) || null;
   
-  // 新しいモーションを作成
   const addMotion = useCallback((name) => {
     const newMotion = createMotion(name);
     setMotions(prev => [...prev, newMotion]);
@@ -43,14 +52,12 @@ export function useMotion() {
     return newMotion;
   }, []);
   
-  // モーションを削除
   const deleteMotion = useCallback((id) => {
     setMotions(prev => {
       const filtered = prev.filter(m => m.id !== id);
       if (filtered.length > 0 && currentMotionId === id) {
         setCurrentMotionId(filtered[0].id);
       } else if (filtered.length === 0) {
-        // すべて削除された場合はデフォルトを作成
         const defaultMotion = createMotion('デフォルトモーション');
         setCurrentMotionId(defaultMotion.id);
         return [defaultMotion];
@@ -59,14 +66,12 @@ export function useMotion() {
     });
   }, [currentMotionId]);
   
-  // モーションを更新
   const updateMotion = useCallback((id, updates) => {
     setMotions(prev => prev.map(m => 
       m.id === id ? { ...m, ...updates } : m
     ));
   }, []);
   
-  // モーション名を変更
   const renameMotion = useCallback((id, newName) => {
     updateMotion(id, { name: newName });
   }, [updateMotion]);

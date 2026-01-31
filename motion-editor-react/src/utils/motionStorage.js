@@ -1,6 +1,7 @@
 import { DEFAULT_MOTION_DURATION } from '../constants';
 
 const STORAGE_KEY = 'motion-editor-motions';
+const CURRENT_MOTION_ID_KEY = 'motion-editor-current-motion-id';
 
 /**
  * ローカルストレージからモーション一覧を読み込む
@@ -27,6 +28,34 @@ export function saveMotions(motions) {
     return true;
   } catch (error) {
     console.error('Failed to save motions:', error);
+    return false;
+  }
+}
+
+/**
+ * ローカルストレージから前回選択していたモーションIDを読み込む
+ */
+export function loadCurrentMotionId() {
+  try {
+    return localStorage.getItem(CURRENT_MOTION_ID_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 選択中のモーションIDをローカルストレージに保存（再読込時に復元するため）
+ */
+export function saveCurrentMotionId(id) {
+  try {
+    if (id != null) {
+      localStorage.setItem(CURRENT_MOTION_ID_KEY, id);
+    } else {
+      localStorage.removeItem(CURRENT_MOTION_ID_KEY);
+    }
+    return true;
+  } catch (error) {
+    console.error('Failed to save current motion id:', error);
     return false;
   }
 }
