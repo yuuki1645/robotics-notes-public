@@ -109,7 +109,8 @@ function App() {
   }
   
   const handleTimeClick = (time, channel) => {
-    if (currentMotion) {
+    // チャンネル指定時のみキーフレーム追加（ルーラークリックでは追加しない）
+    if (currentMotion && channel !== null) {
       addKeyframe(time, channel);
     }
   };

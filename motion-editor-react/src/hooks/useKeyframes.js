@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { MAX_MOTION_DURATION, MIN_KEYFRAME_INTERVAL, SERVO_CHANNELS } from '../constants';
+import { MAX_MOTION_DURATION, MIN_KEYFRAME_INTERVAL } from '../constants';
 
 export function useKeyframes(motion, updateMotion) {
   // キーフレームを時間順にソート
@@ -71,38 +71,13 @@ export function useKeyframes(motion, updateMotion) {
     return Math.max(0, Math.min(MAX_MOTION_DURATION, adjustedTime));
   }, []);
   
-  // キーフレームを追加（チャンネルを指定可能）
-  const addKeyframe = useCallback((time, channel = null) => {
-    if (!motion) return;
+  // キーフレームを追加（チャンネル指定必須）
+  const addKeyframe = useCallback((time, channel) => {
+    if (!motion || channel == null) return;
     
     // 最大時間を制限
     const clampedTime = Math.max(0, Math.min(MAX_MOTION_DURATION, time));
     
-    // チャンネルが指定されていない場合は、全チャンネルに追加（既存の動作）
-    if (channel === null) {
-      // 重複しない時間を見つける
-      const adjustedTime = findNonOverlappingTime(clampedTime, sortedKeyframes);
-      
-      // 既存のキーフレームから最も近いものをコピー
-      let angles = {};
-      if (sortedKeyframes.length > 0) {
-        const closest = sortedKeyframes.reduce((prev, curr) => 
-          Math.abs(curr.time - adjustedTime) < Math.abs(prev.time - adjustedTime) ? curr : prev
-        );
-        angles = { ...closest.angles };
-      } else {
-        // デフォルト角度
-        angles = { 0: 90, 1: 90, 2: 90, 3: 90, 8: 90, 9: 90, 10: 90, 11: 90 };
-      }
-      
-      const newKeyframe = { time: adjustedTime, angles };
-      const newKeyframes = [...sortedKeyframes, newKeyframe].sort((a, b) => a.time - b.time);
-      
-      updateMotion(motion.id, { keyframes: newKeyframes });
-      return;
-    }
-    
-    // チャンネルが指定されている場合：そのチャンネルのみを更新
     // 同じ時間に既存のキーフレームがあるか確認
     const existingKeyframe = getKeyframeAtTime(clampedTime, sortedKeyframes);
     
@@ -123,19 +98,16 @@ export function useKeyframes(motion, updateMotion) {
       
       updateMotion(motion.id, { keyframes: newKeyframes });
     } else {
-      // 新しいキーフレームを作成
-      // 指定されたチャンネルのみ角度を設定し、他のチャンネルはundefinedにする
+      // 新しいキーフレームを作成（指定チャンネルのみ）
       const angles = {};
-      // 指定されたチャンネルの角度を補間値から取得
       angles[channel] = getAngleAtTime(clampedTime, channel, sortedKeyframes);
-      // 他のチャンネルはundefinedのまま（キーフレームが存在しないことを示す）
       
       const newKeyframe = { time: clampedTime, angles };
       const newKeyframes = [...sortedKeyframes, newKeyframe].sort((a, b) => a.time - b.time);
       
       updateMotion(motion.id, { keyframes: newKeyframes });
     }
-  }, [motion, sortedKeyframes, updateMotion, findNonOverlappingTime, getKeyframeAtTime, getAngleAtTime]);
+  }, [motion, sortedKeyframes, updateMotion, getKeyframeAtTime, getAngleAtTime]);
   
   // キーフレームを削除
   const deleteKeyframe = useCallback((index) => {
