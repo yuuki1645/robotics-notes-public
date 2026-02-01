@@ -17,6 +17,7 @@ export default function Timeline({
   selectedKeyframeId,
   onPlayheadDrag,
   endKeyframeDragRef,
+  setTitle,
 }) {
   const timelineRef = useRef(null);
   const scrollableRef = useRef(null);
@@ -120,7 +121,7 @@ export default function Timeline({
           </div>
           <div className="timeline-tracks">
             {SERVO_CHANNELS.map((channel) => (
-              <TimelineTrack key={channel} channel={channel} />
+              <TimelineTrack key={channel} channel={channel} setTitle={setTitle} />
             ))}
           </div>
           <div className="timeline-playhead-handle-container">

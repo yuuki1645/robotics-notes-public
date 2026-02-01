@@ -9,6 +9,7 @@ export default function TimelineKeyframe({
   x,
   isSelected,
   angle,
+  setTitle,
 }) {
   const { onKeyframeClick, onKeyframeStartDrag } = useTimelineContext();
   const keyframeRef = useRef(null);
@@ -38,8 +39,8 @@ export default function TimelineKeyframe({
       ref={keyframeRef}
       className={`timeline-keyframe ${isSelected ? 'selected' : ''}`}
       style={{ left: `${x}px` }}
-      onClick={handleClick}
-      onTouchEnd={handleClick}
+      onClick={() => setTitle("ME2")}
+      onTouchEnd={() => setTitle("ME2")}
       onMouseDown={(e) => onKeyframeStartDrag(e, keyframeId, channel)}
       title={`時間: ${(keyframe.time / 1000).toFixed(2)}s, 角度: ${angle.toFixed(1)}°`}
     >

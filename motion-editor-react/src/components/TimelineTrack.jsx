@@ -2,7 +2,7 @@ import { useTimelineContext } from '../contexts/TimelineContext';
 import TimelineKeyframe from './TimelineKeyframe';
 import './Timeline.css';
 
-export default function TimelineTrack({ channel }) {
+export default function TimelineTrack({ channel, setTitle }) {
   const {
     keyframes,
     currentTime,
@@ -66,6 +66,7 @@ export default function TimelineTrack({ channel }) {
               x={x}
               isSelected={isSelected}
               angle={kf.angle ?? 90}
+              setTitle={setTitle}
             />
           );
         })}

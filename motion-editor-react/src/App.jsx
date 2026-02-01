@@ -12,8 +12,6 @@ import PlaybackControls from './components/PlaybackControls';
 import { transitionServos } from './api/servoApi';
 import './App.css';
 
-// hello
-
 function App() {
   const {
     motions,
@@ -60,6 +58,8 @@ function App() {
   const { servos, loading: servosLoading } = useServos();
 
   const [selectedKeyframeId, setSelectedKeyframeId] = useState(null);
+
+  const [title, setTitle] = useState('MEaaaaaaaaaaaa');
 
   const endKeyframeDragRef = useRef(null);
 
@@ -143,7 +143,7 @@ function App() {
   return (
     <div className="app">
       <div className="app-header">
-        <h1>モーションエディタ</h1>
+        <h1>{title}</h1>
       </div>
 
       <div className="app-content">
@@ -167,6 +167,7 @@ function App() {
             selectedKeyframeId={selectedKeyframeId}
             onPlayheadDrag={handlePlayheadDrag}
             endKeyframeDragRef={endKeyframeDragRef}
+            setTitle={setTitle}
           />
 
           <PlaybackControls
