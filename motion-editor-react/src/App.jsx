@@ -12,6 +12,8 @@ import PlaybackControls from './components/PlaybackControls';
 import { transitionServos } from './api/servoApi';
 import './App.css';
 
+// main
+
 function App() {
   const {
     motions,
