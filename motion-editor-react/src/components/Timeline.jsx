@@ -86,6 +86,7 @@ export default function Timeline({
       isPlayheadDragging,
       selectedKeyframeId,
       onTimeClick,
+      endKeyframeDrag,
       onKeyframeClick: handleKeyframeClick,
       onKeyframeStartDrag,
       onPlayheadDrag: handlePlayheadDrag,
@@ -122,17 +123,7 @@ export default function Timeline({
               <TimelineTrack key={channel} channel={channel} />
             ))}
           </div>
-          <TimelinePlayheadHandle
-            currentTime={currentTime}
-            timeToX={timeToX}
-            xToTime={xToTime}
-            getClientX={getClientX}
-            scrollableRef={scrollableRef}
-            isPlayheadDragging={isPlayheadDragging}
-            onPlayheadDrag={handlePlayheadDrag}
-            onPlayheadDragEnd={handlePlayheadDragEnd}
-            endKeyframeDrag={endKeyframeDrag}
-          />
+          <TimelinePlayheadHandle />
         </div>
       </div>
     </TimelineContext.Provider>

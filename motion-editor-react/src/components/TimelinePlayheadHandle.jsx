@@ -1,19 +1,22 @@
 import { useCallback } from 'react';
+import { useTimelineContext } from '../contexts/TimelineContext';
 import './Timeline.css';
 
 const HANDLE_CENTER_OFFSET_PX = 20;
 
-export default function TimelinePlayheadHandle({
-  currentTime,
-  timeToX,
-  xToTime,
-  getClientX,
-  scrollableRef,
-  isPlayheadDragging,
-  onPlayheadDrag,
-  onPlayheadDragEnd,
-  endKeyframeDrag,
-}) {
+export default function TimelinePlayheadHandle() {
+  const { 
+    currentTime, 
+    timeToX, 
+    xToTime, 
+    getClientX, 
+    scrollableRef, 
+    isPlayheadDragging, 
+    onPlayheadDrag,
+    onPlayheadDragEnd, 
+    endKeyframeDrag 
+  } = useTimelineContext();
+  
   const setupDrag = useCallback(
     (e) => {
       e.stopPropagation();
