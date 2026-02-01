@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { CH_TO_SERVO_NAME } from '../constants';
 import GuideImage from './GuideImage';
 import './ServoAngleEditor.css';
+import { TestContext } from '../contexts/TestContext';
 
 export default function ServoAngleEditor({
   keyframe,
@@ -13,6 +14,7 @@ export default function ServoAngleEditor({
   endKeyframeDragRef,
 }) {
   const [angle, setAngle] = useState(90);
+  const test = useContext(TestContext);
 
   useEffect(() => {
     if (keyframe && channel !== null && keyframe.angle !== undefined) {
@@ -29,7 +31,7 @@ export default function ServoAngleEditor({
   if (!keyframe || channel === null) {
     return (
       <div className="servo-angle-editor">
-        <p className="servo-angle-editor-empty">キーフレームを選択してください</p>
+        <p className="servo-angle-editor-empty">{test}キーフレームを選択してください</p>
       </div>
     );
   }

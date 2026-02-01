@@ -11,6 +11,7 @@ import ServoAngleEditor from './components/ServoAngleEditor';
 import PlaybackControls from './components/PlaybackControls';
 import { transitionServos } from './api/servoApi';
 import './App.css';
+import { TestContext } from './contexts/TestContext';
 
 // main
 
@@ -141,6 +142,7 @@ function App() {
   }
 
   return (
+    <TestContext.Provider value="test 002 provided">
     <div className="app">
       <div className="app-header">
         <h1>モーションエディタ</h1>
@@ -195,6 +197,7 @@ function App() {
         />
       </div>
     </div>
+    </TestContext.Provider>
   );
 }
 
